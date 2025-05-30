@@ -1,6 +1,6 @@
 module.exports = {
   InfoController: require("./info-controller"),
-  CertifcateController: require("./certificate-controller"),
+  CertificateController: require("./certificate-controller"),
   accountController: require("./account-controller"),
-  
+
 };

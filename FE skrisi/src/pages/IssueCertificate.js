@@ -18,15 +18,11 @@ const IssueCertificate = () => {
     const [formData, setFormData] = useState({
         template: '',
         recipientName: '',
-        certificateTitle: '',
-        issueDate: '',
-        expiryDate: '',
-        description: '',
-        signature: null,
-        category: '',
+        issueDate: new Date().toISOString().split('T')[0],
+        expiryDate: '', // Optional expiry date
+        targetAddress: '',
         issuerAddress: localStorage.getItem("walletAddress"),
         issuerName: localStorage.getItem("walletAddress"),
-        targetAddress: '',
     });
     const [templateName, setTemplateName] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -38,6 +34,12 @@ const IssueCertificate = () => {
         const fetchTemplates = async () => {
             try {
                 const token = localStorage.getItem('token');
+                if (!token) {
+                    toast.error('Silakan login terlebih dahulu');
+                    navigate('/login');
+                    return;
+                }
+
                 const response = await axios.get(
                     `${getEnv('BASE_URL')}/api/certificate/template`,
                     {
@@ -48,33 +50,31 @@ const IssueCertificate = () => {
                     }
                 );
 
-                console.log('Full response:', response.data);
-
-                // Jika response.data = { data: { templates: [...] } }
-                setTemplateName(response.data.data.templates);
+                if (response.data.success && response.data.data.templates) {
+                    setTemplateName(response.data.data.templates);
+                } else {
+                    toast.error('Format data template tidak valid');
+                }
             } catch (error) {
                 console.error('Error fetching templates:', error);
+                if (error.response?.status === 401) {
+                    toast.error('Sesi anda telah berakhir. Silakan login kembali.');
+                    navigate('/login');
+                } else {
+                    toast.error('Gagal mengambil data template');
+                }
             } finally {
                 setLoading(false);
             }
         };
 
         fetchTemplates();
-    }, []);
+    }, [navigate]);
 
     const handleChange = (e) => {
         const { name, value } = e.target;
         setFormData({ ...formData, [name]: value });
         setErrors({ ...errors, [name]: '' });
-    };
-
-    const handleFileChange = (e) => {
-        const file = e.target.files[0];
-        if (file && file.size > 2 * 1024 * 1024) {
-            setErrors({ ...errors, signature: 'Ukuran file maksimum 2MB' });
-            return;
-        }
-        setFormData({ ...formData, signature: file });
     };
 
     const validateForm = () => {
@@ -83,14 +83,15 @@ const IssueCertificate = () => {
         if (!formData.recipientName) newErrors.recipientName = 'Nama penerima wajib diisi';
         else if (!/^[a-zA-Z\s'-]+$/.test(formData.recipientName))
             newErrors.recipientName = 'Nama hanya boleh berisi huruf, spasi, tanda hubung, atau apostrof';
-        if (!formData.certificateTitle) newErrors.certificateTitle = 'Judul sertifikat wajib diisi';
-        if (!formData.issueDate) newErrors.issueDate = 'Tanggal penerbitan wajib diisi';
-
-        if (formData.expiryDate && formData.expiryDate < formData.issueDate)
-            newErrors.expiryDate = 'Tanggal kedaluwarsa harus lebih baru dari tanggal penerbitan';
         if (!formData.targetAddress) newErrors.targetAddress = 'Alamat target wajib diisi';
         else if (!/^0x[a-fA-F0-9]{40}$/.test(formData.targetAddress))
             newErrors.targetAddress = 'Alamat target tidak valid';
+
+        // Validate expiry date if provided
+        if (formData.expiryDate && formData.expiryDate < formData.issueDate) {
+            newErrors.expiryDate = 'Tanggal kadaluarsa harus lebih baru dari tanggal penerbitan';
+        }
+
         return newErrors;
     };
 
@@ -109,21 +110,14 @@ const IssueCertificate = () => {
                 {
                     templateId: formData.template,
                     recipientName: formData.recipientName,
-                    certificateTitle: formData.certificateTitle,
                     issueDate: formData.issueDate,
-                    expiryDate: formData.expiryDate,
-                    description: formData.description,
-                    category: formData.category,
+                    expiryDate: formData.expiryDate || null, // Send null if not provided
                     targetAddress: formData.targetAddress,
                 },
                 {
-                headers: {
-                    'Authorization': `Bearer ${localStorage.getItem("token")}`,
-                },
-                onUploadProgress: (progressEvent) => {
-                    const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
-                    console.log(`Upload Progress: ${percentCompleted}%`);
-                },
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem("token")}`,
+                    },
                 }
             );
 
@@ -137,15 +131,6 @@ const IssueCertificate = () => {
                     draggable: true,
                     progress: undefined,
                     theme: "dark",
-                    style: {
-                        background: '#1F2937',
-                        color: '#fff',
-                        fontSize: '1rem',
-                        fontWeight: '500',
-                        padding: '1rem',
-                        borderRadius: '0.5rem',
-                        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)'
-                    }
                 });
 
                 setTimeout(() => {
@@ -157,31 +142,26 @@ const IssueCertificate = () => {
                 }, 2000);
             }
         } catch (error) {
-            console.error('Error uploading file:', error);
-            toast.error('Gagal membuat sertifikat. Silakan coba lagi.', {
-                position: "top-center",
-                autoClose: 3000,
-                hideProgressBar: false,
-                closeOnClick: true,
-                pauseOnHover: true,
-                draggable: true,
-                progress: undefined,
-                theme: "dark",
-                style: {
-                    background: '#1F2937',
-                    color: '#fff',
-                    fontSize: '1rem',
-                    fontWeight: '500',
-                    padding: '1rem',
-                    borderRadius: '0.5rem',
-                    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)'
-                }
-            });
+            console.error('Error creating certificate:', error);
+            if (error.response?.status === 401) {
+                toast.error('Sesi anda telah berakhir. Silakan login kembali.');
+                navigate('/login');
+            } else {
+                toast.error('Gagal membuat sertifikat. Silakan coba lagi.');
+            }
             setErrors({ submit: 'Gagal membuat sertifikat. Silakan coba lagi.' });
         } finally {
             setIsSubmitting(false);
         }
     };
+
+    if (loading) {
+        return (
+            <div className="flex items-center justify-center min-h-screen">
+                <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+            </div>
+        );
+    }
 
     return (
         <div className="animate-fade-in">
@@ -230,21 +210,6 @@ const IssueCertificate = () => {
                             )}
                         </div>
 
-                        <div>
-                            <label className="block text-sm font-medium text-gray-300 mb-2">Judul Sertifikat</label>
-                            <input
-                                type="text"
-                                name="certificateTitle"
-                                value={formData.certificateTitle}
-                                onChange={handleChange}
-                                className="input-field"
-                                required
-                            />
-                            {errors.certificateTitle && (
-                                <p className="text-red-400 text-sm mt-1">{errors.certificateTitle}</p>
-                            )}
-                        </div>
-
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
                                 <label className="block text-sm font-medium text-gray-300 mb-2">Tanggal Penerbitan</label>
@@ -256,12 +221,14 @@ const IssueCertificate = () => {
                                     className="input-field"
                                     required
                                 />
-                                {errors.issueDate && <p className="text-red-400 text-sm mt-1">{errors.issueDate}</p>}
+                                {errors.issueDate && (
+                                    <p className="text-red-400 text-sm mt-1">{errors.issueDate}</p>
+                                )}
                             </div>
 
                             <div>
                                 <label className="block text-sm font-medium text-gray-300 mb-2">
-                                    Tanggal Kedaluwarsa (Opsional)
+                                    Tanggal Kadaluarsa (Opsional)
                                 </label>
                                 <input
                                     type="date"
@@ -269,6 +236,7 @@ const IssueCertificate = () => {
                                     value={formData.expiryDate}
                                     onChange={handleChange}
                                     className="input-field"
+                                    min={formData.issueDate}
                                 />
                                 {errors.expiryDate && (
                                     <p className="text-red-400 text-sm mt-1">{errors.expiryDate}</p>
@@ -277,62 +245,13 @@ const IssueCertificate = () => {
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium text-gray-300 mb-2">
-                                Deskripsi (Opsional)
-                            </label>
-                            <textarea
-                                name="description"
-                                value={formData.description}
-                                onChange={handleChange}
-                                className="input-field"
-                                rows="4"
-                            ></textarea>
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium text-gray-300 mb-2">
-                                Tanda Tangan (Opsional)
-                            </label>
-                            <input
-                                type="file"
-                                name="signature"
-                                onChange={handleFileChange}
-                                className="input-field file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-medium file:bg-blue-500/10 file:text-blue-400 hover:file:bg-blue-500/20"
-                                accept="image/png,image/jpeg"
-                            />
-                            {errors.signature && (
-                                <p className="text-red-400 text-sm mt-1">{errors.signature}</p>
-                            )}
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium text-gray-300 mb-2">
-                                Kategori (Opsional)
-                            </label>
-                            <select
-                                name="category"
-                                value={formData.category}
-                                onChange={handleChange}
-                                className="input-field"
-                            >
-                                <option value="">Pilih Kategori</option>
-                                <option value="academic">Akademik</option>
-                                <option value="professional">Profesional</option>
-                                <option value="training">Pelatihan</option>
-                                <option value="other">Lainnya</option>
-                            </select>
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium text-gray-300 mb-2">
-                                Alamat Target
-                            </label>
+                            <label className="block text-sm font-medium text-gray-300 mb-2">Alamat Target</label>
                             <input
                                 type="text"
                                 name="targetAddress"
                                 value={formData.targetAddress}
                                 onChange={handleChange}
-                                className="input-field font-mono"
+                                className="input-field"
                                 placeholder="0x..."
                                 required
                             />
@@ -340,21 +259,13 @@ const IssueCertificate = () => {
                                 <p className="text-red-400 text-sm mt-1">{errors.targetAddress}</p>
                             )}
                         </div>
-                    </div>
 
-                    <div className="flex justify-end space-x-4 pt-4 border-t border-gray-700/30">
-                        <button
-                            type="button"
-                            onClick={() => navigate(-1)}
-                            className="btn-secondary"
-                        >
-                            Batal
-                        </button>
                         <button
                             type="submit"
-                            className="btn-primary"
+                            disabled={isSubmitting}
+                            className="w-full btn-primary"
                         >
-                            Terbitkan Sertifikat
+                            {isSubmitting ? 'Memproses...' : 'Terbitkan Sertifikat'}
                         </button>
                     </div>
                 </form>

@@ -3,19 +3,10 @@ import { useState, useEffect } from 'react';
 import { BrowserProvider, Contract, isAddress } from 'ethers';
 import contractABI from '../ABI.json';
 import { toast } from 'react-toastify';
+import { NETWORKS, CONTRACTS, DEFAULT_NETWORK, APP_CONFIG } from '../config/network';
 
-const contractAddress = '0x5FbDB2315678afecb367f032d93F642f64180aa3';
-const networkConfig = {
-    chainId: '0x7a69',
-    chainName: 'Hardhat Local',
-    rpcUrls: ['http://127.0.0.1:8545/'],
-    nativeCurrency: {
-        name: 'Ether',
-        symbol: 'ETH',
-        decimals: 18,
-    },
-    blockExplorerUrls: [],
-};
+const contractAddress = CONTRACTS.certificateRegistry.address;
+const networkConfig = NETWORKS[DEFAULT_NETWORK];
 
 const Submit = () => {
     const navigate = useNavigate();
@@ -28,65 +19,90 @@ const Submit = () => {
 
     const state = location.state;
 
-
-    // Inisialisasi ethers.js dengan MetaMask
+    // Initialize ethers.js with MetaMask
     useEffect(() => {
         const initEthers = async () => {
             if (!window.ethereum) {
-                setError('MetaMask not detected. Please install MetaMask.');
+                toast.error('MetaMask not detected. Please install MetaMask.');
                 return;
             }
 
             try {
-                const currentChainId = await window.ethereum.request({ method: 'eth_chainId' });
-                const targetChainId = networkConfig.chainId;
+                // Request account access first
+                const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+                if (!accounts || accounts.length === 0) {
+                    throw new Error('No accounts found');
+                }
 
-                if (currentChainId !== targetChainId) {
+                // Get current chain ID
+                const currentChainId = await window.ethereum.request({ method: 'eth_chainId' });
+                console.log('Current chain ID:', currentChainId);
+                console.log('Target chain ID:', networkConfig.chainId);
+
+                // Switch network if needed
+                if (currentChainId !== networkConfig.chainId) {
                     try {
                         await window.ethereum.request({
                             method: 'wallet_switchEthereumChain',
-                            params: [{ chainId: targetChainId }],
+                            params: [{ chainId: networkConfig.chainId }],
                         });
                     } catch (switchError) {
                         if (switchError.code === 4902) {
-                            await window.ethereum.request({
-                                method: 'wallet_addEthereumChain',
-                                params: [
-                                    {
-                                        chainId: networkConfig.chainId,
-                                        chainName: networkConfig.chainName,
-                                        rpcUrls: networkConfig.rpcUrls,
-                                        nativeCurrency: networkConfig.nativeCurrency,
-                                        blockExplorerUrls: networkConfig.blockExplorerUrls,
-                                    },
-                                ],
-                            });
+                            try {
+                                await window.ethereum.request({
+                                    method: 'wallet_addEthereumChain',
+                                    params: [networkConfig],
+                                });
+                            } catch (addError) {
+                                toast.error('Failed to add Hardhat network to MetaMask');
+                                return;
+                            }
                         } else {
-                            throw switchError;
+                            toast.error('Failed to switch to Hardhat network');
+                            return;
                         }
                     }
                 }
 
-                await window.ethereum.request({ method: 'eth_requestAccounts' });
-                const web3Provider = new BrowserProvider(window.ethereum, {
-                    chainId: 31337,
-                    name: 'hardhat',
-                    ensAddress: null, // Nonaktifkan ENS
-                });
+                // Create provider and signer
+                const web3Provider = new BrowserProvider(window.ethereum);
                 const signer = await web3Provider.getSigner();
                 const contractInstance = new Contract(contractAddress, contractABI, signer);
 
                 setProvider(web3Provider);
                 setSigner(signer);
                 setContract(contractInstance);
+
+                // Listen for account changes
+                window.ethereum.on('accountsChanged', (accounts) => {
+                    if (accounts.length === 0) {
+                        toast.error('Please connect your MetaMask wallet');
+                    }
+                });
+
+                // Listen for chain changes
+                window.ethereum.on('chainChanged', (chainId) => {
+                    if (chainId !== networkConfig.chainId) {
+                        toast.error('Please switch to Hardhat network');
+                    }
+                });
+
             } catch (err) {
-                setError(`Failed to connect to MetaMask: ${err.message}`);
+                console.error('Error initializing ethers:', err);
+                toast.error(`Failed to connect to MetaMask: ${err.message}`);
             }
         };
 
         initEthers();
-    }, []);
 
+        // Cleanup listeners
+        return () => {
+            if (window.ethereum) {
+                window.ethereum.removeAllListeners('accountsChanged');
+                window.ethereum.removeAllListeners('chainChanged');
+            }
+        };
+    }, []);
 
     useEffect(() => {
         if (!state || !state.data) {
@@ -101,20 +117,17 @@ const Submit = () => {
     const data = state.data;
     console.log('Data from state:', data);
 
-    const fileCid =
-        data.fileCid ||
-        'https://bafybeibgunsp4yfmxonp4vji3ntzpyis32wh33hucb6tsdg4xbogdniyyu.ipfs.w3s.link/certificate_Asep_Teguh_hidayat_2025-05-04T03-57-46-396Z.pdf';
+    const fileCid = data.fileCid || 'https://bafybeibgunsp4yfmxonp4vji3ntzpyis32wh33hucb6tsdg4xbogdniyyu.ipfs.w3s.link/certificate_Asep_Teguh_hidayat_2025-05-04T03-57-46-396Z.pdf';
 
     const certificateData = {
         id: data.id || 'CERT123',
         certificateTitle: data.certificateTitle || 'Certificate of Achievement',
         expiryDate: data.expiryDate || '',
         issueDate: data.issueDate || '2025-05-16',
-        cid: data.fileCid || 'QmT5NvUtoM5nXy6v7e4f3g3g3g3g3g3g3g3g3g3g3g3g3g', // Ganti dengan CID valid
+        cid: data.fileCid || 'QmT5NvUtoM5nXy6v7e4f3g3g3g3g3g3g3g3g3g3g3g3g3g',
         issuerName: data.issuerName || 'Universitas XYZ',
         recipientName: data.recipientName || 'Recipient Name',
         targetAddress: data.targetAddress || '0xFde6f7aC02514dDa4B3bB7C135EB0A39C90243A4',
-
     };
 
     const handleIssueCertificate = async () => {
@@ -131,63 +144,102 @@ const Submit = () => {
                 throw new Error('Field wajib (ID, judul, nama penerima) tidak boleh kosong');
             }
 
-            if (!isAddress(certificateData.targetAddress) || certificateData.targetAddress.includes('.eth')) {
-                throw new Error('Alamat target tidak valid: ENS tidak didukung di Hardhat Network');
+            if (!isAddress(certificateData.targetAddress)) {
+                throw new Error('Alamat target tidak valid');
             }
 
+            // Format dates properly
+            const formattedIssueDate = certificateData.issueDate ? new Date(certificateData.issueDate).toISOString().split('T')[0] : '';
+            const formattedExpiryDate = certificateData.expiryDate ? new Date(certificateData.expiryDate).toISOString().split('T')[0] : '';
+
+            // Ensure CID is properly formatted
+            const formattedCid = certificateData.cid.startsWith('0x') ? certificateData.cid : `0x${certificateData.cid}`;
+
+            console.log('Sending data to contract:', {
+                id: certificateData.id,
+                title: certificateData.certificateTitle,
+                expiryDate: formattedExpiryDate,
+                issueDate: formattedIssueDate,
+                cid: formattedCid,
+                issuer: certificateData.issuerName,
+                recipient: certificateData.recipientName,
+                targetAddress: certificateData.targetAddress
+            });
+
+            // Call the contract function
             const tx = await contract.issueCertificate(
                 certificateData.id,
                 certificateData.certificateTitle,
-                certificateData.expiryDate,
-                certificateData.issueDate,
-                certificateData.cid,
+                formattedExpiryDate,
+                formattedIssueDate,
+                formattedCid,
                 certificateData.issuerName,
                 certificateData.recipientName,
-                certificateData.targetAddress
+                certificateData.targetAddress,
+                { gasLimit: APP_CONFIG.maxGasLimit } // Use gas limit from config
             );
 
-            const receipt = await tx.wait();
-            const log = receipt.logs.find((log) => {
-                try {
-                    return contract.interface.parseLog(log).name === 'CertificateIssued';
-                } catch {
-                    return false;
-                }
-            });
-
-            if (!log) {
-                throw new Error('Event CertificateIssued tidak ditemukan dalam receipt transaksi');
-            }
-
-            const decoded = contract.interface.parseLog(log);
-            const issuedId = decoded.args.id;
-
-            toast.success('Sertifikat berhasil diterbitkan ke blockchain!', {
+            // Show transaction pending toast
+            const pendingToast = toast.info('Transaksi sedang diproses...', {
                 position: "top-center",
-                autoClose: 3000,
-                hideProgressBar: false,
-                closeOnClick: true,
+                autoClose: false,
+                closeOnClick: false,
                 pauseOnHover: true,
-                draggable: true,
-                progress: undefined,
-                theme: "dark",
-                style: {
-                    background: '#1F2937',
-                    color: '#fff',
-                    fontSize: '1rem',
-                    fontWeight: '500',
-                    padding: '1rem',
-                    borderRadius: '0.5rem',
-                    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)'
-                }
+                draggable: false,
             });
-            setTransactionStatus(`Sertifikat berhasil diterbitkan dengan ID: ${issuedId}`);
-        } catch (err) {
-            if (err.code === 'UNSUPPORTED_OPERATION' && err.operation === 'getEnsAddress') {
-                toast.error('ENS tidak didukung di Hardhat Network. Gunakan alamat Ethereum yang valid.');
-            } else {
-                toast.error(`Gagal menerbitkan sertifikat: ${err.message}`);
+
+            try {
+                // Wait for transaction to be mined
+                const receipt = await tx.wait();
+                console.log('Transaction receipt:', receipt);
+
+                // Find the CertificateIssued event
+                const log = receipt.logs.find((log) => {
+                    try {
+                        return contract.interface.parseLog(log).name === 'CertificateIssued';
+                    } catch {
+                        return false;
+                    }
+                });
+
+                if (!log) {
+                    throw new Error('Event CertificateIssued tidak ditemukan dalam receipt transaksi');
+                }
+
+                const decoded = contract.interface.parseLog(log);
+                const issuedId = decoded.args.id;
+
+                // Close the pending toast
+                toast.dismiss(pendingToast);
+
+                // Show success toast
+                toast.success('Sertifikat berhasil diterbitkan ke blockchain!', {
+                    position: "top-center",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    theme: "dark",
+                });
+
+                setTransactionStatus(`Sertifikat berhasil diterbitkan dengan ID: ${issuedId}`);
+
+                // Wait for 3 seconds before navigating
+                setTimeout(() => {
+                    navigate('/dashboard');
+                }, 3000);
+
+            } catch (txError) {
+                // Close the pending toast
+                toast.dismiss(pendingToast);
+                throw txError;
             }
+
+        } catch (err) {
+            console.error('Error issuing certificate:', err);
+            toast.error(`Gagal menerbitkan sertifikat: ${err.message}`);
             setTransactionStatus('');
         }
     };

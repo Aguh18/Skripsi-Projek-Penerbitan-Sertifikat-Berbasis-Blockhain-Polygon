@@ -30,7 +30,9 @@
     "puppeteer": "^24.2.1",
     "sequelize": "^6.31.1",
     "sequelize-cli": "^6.6.0",
-    "winston": "^3.8.2"
+    "winston": "^3.8.2",
+    "sharp": "^0.33.2",
+    "web3": "^4.5.0"
   },
   "devDependencies": {
     "prisma": "^6.5.0"

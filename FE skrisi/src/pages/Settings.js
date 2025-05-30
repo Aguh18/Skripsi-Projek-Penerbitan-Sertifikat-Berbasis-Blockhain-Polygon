@@ -1,4 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
+import { getEnv } from '../utils/env';
+import { toast } from 'react-toastify';
 import {
     UserCircleIcon,
     BellIcon,
@@ -8,6 +11,10 @@ import {
 } from '@heroicons/react/24/outline';
 
 const Settings = () => {
+    const [profile, setProfile] = useState({ name: '', email: '' });
+    const [profileLoading, setProfileLoading] = useState(true);
+    const [profileSaving, setProfileSaving] = useState(false);
+
     const [notifications, setNotifications] = useState({
         email: true,
         push: false,
@@ -30,6 +37,49 @@ const Settings = () => {
             { date: '2024-05-25 18:45', device: 'Firefox on Linux', location: 'Surabaya' },
         ],
     });
+
+    useEffect(() => {
+        const fetchProfile = async () => {
+            setProfileLoading(true);
+            try {
+                const token = localStorage.getItem('token');
+                const res = await axios.get(`${getEnv('BASE_URL')}/api/account/me`, {
+                    headers: { Authorization: `Bearer ${token}` },
+                });
+                setProfile({
+                    name: res.data.data.name || '',
+                    email: res.data.data.email || '',
+                });
+            } catch (err) {
+                toast.error('Gagal mengambil data profil');
+            } finally {
+                setProfileLoading(false);
+            }
+        };
+        fetchProfile();
+    }, []);
+
+    const handleProfileChange = (e) => {
+        setProfile({ ...profile, [e.target.name]: e.target.value });
+    };
+
+    const handleProfileSubmit = async (e) => {
+        e.preventDefault();
+        setProfileSaving(true);
+        try {
+            const token = localStorage.getItem('token');
+            await axios.put(
+                `${getEnv('BASE_URL')}/api/account/profile`,
+                profile,
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+            toast.success('Profil berhasil diupdate!');
+        } catch (err) {
+            toast.error('Gagal update profil');
+        } finally {
+            setProfileSaving(false);
+        }
+    };
 
     const handleNotificationChange = (key) => {
         setNotifications(prev => ({
@@ -56,27 +106,40 @@ const Settings = () => {
                         <UserCircleIcon className="w-12 h-12 text-blue-500" />
                         <div>
                             <h2 className="text-lg font-semibold text-gray-300">Profil Pengguna</h2>
-                            <p className="text-sm text-gray-400">admin@example.com</p>
+                            <p className="text-sm text-gray-400">{profile.email || '-'}</p>
                         </div>
                     </div>
-                    <div className="space-y-4">
+                    <form className="space-y-4" onSubmit={handleProfileSubmit}>
                         <div>
                             <label className="block text-sm font-medium text-gray-400 mb-2">Nama Lengkap</label>
                             <input
                                 type="text"
-                                defaultValue="Admin User"
+                                name="name"
+                                value={profile.name}
+                                onChange={handleProfileChange}
                                 className="w-full px-4 py-2 rounded-lg bg-gray-800/50 border border-gray-700 text-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                disabled={profileLoading}
                             />
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-gray-400 mb-2">Email</label>
                             <input
                                 type="email"
-                                defaultValue="admin@example.com"
+                                name="email"
+                                value={profile.email}
+                                onChange={handleProfileChange}
                                 className="w-full px-4 py-2 rounded-lg bg-gray-800/50 border border-gray-700 text-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                disabled={profileLoading}
                             />
                         </div>
-                    </div>
+                        <button
+                            type="submit"
+                            className="btn-primary"
+                            disabled={profileLoading || profileSaving}
+                        >
+                            {profileSaving ? 'Menyimpan...' : 'Simpan Perubahan'}
+                        </button>
+                    </form>
                 </div>
 
                 {/* Notification Settings */}

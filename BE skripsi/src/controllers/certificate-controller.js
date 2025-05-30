@@ -12,7 +12,6 @@ const fss = require('fs/promises');
 const { prisma } = require('../config');
 const { decodeToken } = require('../utils/jwt');
 
-
 const create = async (req, res) => {
   // HTML template sertifikat dengan styling menggunakan CSS inline
   const certificateHtml = `
@@ -114,21 +113,40 @@ const create = async (req, res) => {
   }
 };
 
-
 const issueCertificate = async (req, res) => {
   const {
-    template,
+    templateId,
     recipientName,
-    certificateTitle,
     issueDate,
     expiryDate,
-    description,
-    category,
     targetAddress
   } = req.body;
 
   try {
-    const result = await generateCertificate(req.body);
+    // Get template data
+    const template = await prisma.template.findUnique({
+      where: { id: parseInt(templateId) },
+      include: {
+        user: true // Include user data to get issuer name
+      }
+    });
+
+    if (!template) {
+      return res.status(StatusCodes.NOT_FOUND).json({
+        success: false,
+        message: 'Template tidak ditemukan',
+        error: 'Template not found',
+        data: {},
+      });
+    }
+
+    const result = await generateCertificateFromTemplate({
+      template,
+      recipientName,
+      issueDate,
+      expiryDate,
+      targetAddress
+    });
 
     const web3Client = Web3StorageClient.getInstance();
     await web3Client.initialize();
@@ -149,13 +167,37 @@ const issueCertificate = async (req, res) => {
     const cid = await web3Client.uploadLargeFile(file);
     console.log('📤 File uploaded to IPFS with CID:', cid);
 
-    return res.status(StatusCodes.OK).json({
+    // Get user data from token
+    const userData = decodeToken(req.headers.authorization);
+
+    // Generate certificate number
+    const certificateNumber = `CERT-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
+    // Save certificate data to database
+    const certificate = await prisma.certificate.create({
+      data: {
+        certificateNumber,
+        templateId: parseInt(templateId),
+        recipientName,
+        certificateTitle: template.name, // Use template name as certificate title
+        issueDate: new Date(issueDate),
+        expiryDate: expiryDate ? new Date(expiryDate) : null,
+        issuerName: userData.name || userData.walletAddress, // Use name if available, fallback to wallet address
+        targetAddress,
+        issuerAddress: userData.walletAddress,
+        filePath: `https://${cid}.ipfs.w3s.link/${fileName}`,
+        ipfsCid: cid,
+        status: 'ACTIVE'
+      }
+    });
+
+    return res.status(StatusCodes.CREATED).json({
       success: true,
-      message: 'Certificate issued successfully',
+      message: 'Sertifikat berhasil diterbitkan',
       error: {},
       data: {
-        ...result,
-        fileCid: "https://" + cid + ".ipfs.w3s.link/" + result.filePath,
+        ...certificate,
+        fileCid: `https://${cid}.ipfs.w3s.link/${fileName}`,
       },
     });
 
@@ -163,7 +205,7 @@ const issueCertificate = async (req, res) => {
     console.error('🔥 Error issuing certificate:', err.message);
     return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
       success: false,
-      message: 'Error issuing certificate',
+      message: 'Gagal menerbitkan sertifikat',
       error: err.message,
       data: {},
     });
@@ -174,7 +216,6 @@ async function verifyCertificate(req, res) {
   const { url } = req.body;
 
   try {
-
     const response = await axios({
       url,
       method: 'GET',
@@ -186,7 +227,6 @@ async function verifyCertificate(req, res) {
     const filePath = path.join(outputDir, fileName);
 
     await fs.mkdir(outputDir, { recursive: true });
-
 
     await fs.writeFile(filePath, Buffer.from(response.data));
 
@@ -248,208 +288,72 @@ async function uploadTemplateHandler(req, res) {
       });
     });
 
-    res.status(200).json({
+    return res.status(StatusCodes.CREATED).json({
       success: true,
       message: 'Template uploaded successfully',
-      data: {
-        fileCid: "https://" + cid + ".ipfs.w3s.link/" + fileName,
-      },
-    });
-  } catch (error) {
-    console.error('Error uploading template:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Error uploading template',
-      error: error.message,
-    });
-  }
-}
-
-
-async function getTemplateHandler(req, res) {
-  try {
-
-    data = await getTemplate(req);
-
-    res.status(200).json({
-      success: true,
-      message: 'Template uploaded successfully',
-      data: {
-        templates: data,
-      },
-    });
-  } catch (error) {
-    console.error('Error uploading template:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Error uploading template',
-      error: error.message,
-    });
-  }
-}
-
-async function generateFromTemplate(req, res) {
-  try {
-    console.log('🔍 Debug: Request body:', req.body);
-
-    // Data dummy untuk testing
-    const dummyUserData = {
-      name: "Test Issuer",
-      walletAddress: "0x1234567890abcdef1234567890abcdef12345678"
-    };
-
-    const {
-      templateId,
-      recipientName,
-      certificateTitle,
-      issueDate,
-      expiryDate,
-      description,
-      category,
-      targetAddress
-    } = req.body;
-
-    // Validasi input
-    if (!templateId || !recipientName || !certificateTitle || !issueDate || !targetAddress) {
-      return res.status(400).json({
-        status: 'error',
-        message: 'Missing required fields'
-      });
-    }
-
-    // Generate nomor sertifikat
-    const certificateNumber = `CERT-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
-    console.log('📝 Debug: Generated certificate number:', certificateNumber);
-
-    // Ambil template dari database
-    console.log('🔍 Debug: Fetching template with ID:', templateId);
-    const template = await prisma.template.findUnique({
-      where: { id: parseInt(templateId) }
-    });
-
-    if (!template) {
-      console.log('❌ Debug: Template not found for ID:', templateId);
-      return res.status(404).json({
-        status: 'error',
-        message: 'Template not found'
-      });
-    }
-    console.log('✅ Debug: Template found:', template);
-
-    // Cek dan buat user dummy untuk penerbit jika belum ada
-    console.log('🔍 Debug: Checking dummy issuer user');
-    let dummyIssuer = await prisma.user.findUnique({
-      where: { walletAddress: dummyUserData.walletAddress }
-    });
-
-    if (!dummyIssuer) {
-      console.log('🔄 Debug: Creating dummy issuer user');
-      dummyIssuer = await prisma.user.create({
-        data: {
-          name: dummyUserData.name,
-          walletAddress: dummyUserData.walletAddress,
-          createdAt: new Date()
-        }
-      });
-      console.log('✅ Debug: Dummy issuer user created:', dummyIssuer);
-    }
-
-    // Cek dan buat user dummy untuk penerima jika belum ada
-    console.log('🔍 Debug: Checking dummy recipient user');
-    let dummyRecipient = await prisma.user.findUnique({
-      where: { walletAddress: targetAddress }
-    });
-
-    if (!dummyRecipient) {
-      console.log('🔄 Debug: Creating dummy recipient user');
-      dummyRecipient = await prisma.user.create({
-        data: {
-          name: recipientName,
-          walletAddress: targetAddress,
-          createdAt: new Date()
-        }
-      });
-      console.log('✅ Debug: Dummy recipient user created:', dummyRecipient);
-    }
-
-    // Generate sertifikat menggunakan template dari IPFS
-    console.log('🔄 Debug: Starting certificate generation from template');
-    const result = await generateCertificateFromTemplate({
-      template,
-      certificateNumber,
-      recipientName,
-      certificateTitle,
-      issueDate,
-      expiryDate,
-      description,
-      category,
-      targetAddress,
-      issuerName: dummyIssuer.name,
-      issuerAddress: dummyIssuer.walletAddress
-    });
-    console.log('✅ Debug: Certificate generated successfully:', result);
-
-    // Upload ke IPFS
-    console.log('🔄 Debug: Initializing Web3Storage client');
-    const web3Client = Web3StorageClient.getInstance();
-    await web3Client.initialize();
-
-    const filePath = path.join(__dirname, '..', 'certificates', result.filePath);
-    console.log('📁 Debug: Certificate file path:', filePath);
-
-    const fileContent = await fs.readFile(filePath);
-    const fileName = path.basename(filePath);
-    const file = new File([fileContent], fileName, { type: 'application/pdf' });
-
-    console.log('🔄 Debug: Uploading to IPFS');
-    const cid = await web3Client.uploadLargeFile(file);
-    console.log('✅ Debug: File uploaded to IPFS with CID:', cid);
-
-    // Simpan ke database
-    console.log('🔄 Debug: Saving certificate to database');
-    const certificate = await prisma.certificate.create({
-      data: {
-        certificateNumber,
-        templateId: parseInt(templateId),
-        recipientName,
-        certificateTitle,
-        issueDate: new Date(issueDate),
-        expiryDate: expiryDate ? new Date(expiryDate) : null,
-        description,
-        issuerName: dummyIssuer.name,
-        signaturePath: null,
-        category,
-        targetAddress,
-        issuerAddress: dummyIssuer.walletAddress,
-        ipfsCid: cid,
-        qrCodeUrl: result.qrCodeUrl,
-        filePath: `https://${cid}.ipfs.w3s.link/${fileName}`,
-        status: 'active'
-      }
-    });
-    console.log('✅ Debug: Certificate saved to database:', certificate);
-
-    return res.status(201).json({
-      success: true,
-      message: 'Certificate issued successfully',
       error: {},
       data: {
-        ...result,
-        fileCid: `https://${cid}.ipfs.w3s.link/${fileName}`,
-        certificate,
+        cid: `https://${cid}.ipfs.w3s.link/${fileName}`,
       },
     });
-
-  } catch (error) {
-    console.error('❌ Debug: Error in generateFromTemplate:', error);
-    console.error('❌ Debug: Error stack:', error.stack);
-    res.status(500).json({
+  } catch (err) {
+    console.error('🔥 Error uploading template:', err.message);
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
       success: false,
-      message: error.message,
-      error: error.message,
+      message: 'Error uploading template',
+      error: err.message,
       data: {},
     });
   }
 }
 
-module.exports = { create, issueCertificate, verifyCertificate, uploadTemplateHandler, getTemplateHandler, generateFromTemplate };
+async function getTemplateHandler(req, res) {
+  try {
+    const userData = decodeToken(req.headers.authorization);
+
+    if (!userData?.walletAddress) {
+      return res.status(StatusCodes.UNAUTHORIZED).json({
+        success: false,
+        message: 'Token tidak valid atau kadaluarsa',
+        error: 'Invalid or expired token',
+        data: {},
+      });
+    }
+
+    const templates = await prisma.template.findMany({
+      where: {
+        userId: userData.walletAddress,
+      },
+      select: {
+        id: true,
+        name: true,
+        filePath: true,
+        nameX: true,
+        nameY: true,
+        createdAt: true,
+      },
+      orderBy: {
+        createdAt: 'desc'
+      }
+    });
+
+    return res.status(StatusCodes.OK).json({
+      success: true,
+      message: 'Templates retrieved successfully',
+      error: {},
+      data: {
+        templates,
+      },
+    });
+  } catch (err) {
+    console.error('🔥 Error getting templates:', err.message);
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      success: false,
+      message: 'Error getting templates',
+      error: err.message,
+      data: {},
+    });
+  }
+}
+
+module.exports = { create, issueCertificate, verifyCertificate, uploadTemplateHandler, getTemplateHandler };

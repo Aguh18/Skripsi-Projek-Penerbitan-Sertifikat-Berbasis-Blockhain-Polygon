@@ -12,7 +12,7 @@ const authMiddleware = (req, res, next) => {
         if (!verifyToken(token)) {
             return res.status(403).json({ message: "Forbidden: Invalid token" });
         }
-
+        req.user = decodeToken(token);
         next();
     } catch (error) {
         return res.status(403).json({ message: "Forbidden: Invalid token" });
