@@ -1,0 +1,3 @@
+-- AlterTable
+ALTER TABLE "Template" ADD COLUMN     "nameX" DOUBLE PRECISION,
+ADD COLUMN     "nameY" DOUBLE PRECISION;

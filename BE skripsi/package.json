@@ -1,0 +1,38 @@
+{
+  "name": "express-starter",
+  "version": "1.0.0",
+  "description": "Express Starter Template",
+  "main": "index.js",
+  "scripts": {
+    "dev": "node --watch src/index.js"
+  },
+  "keywords": [
+    "template"
+  ],
+  "author": "Milind Mishra",
+  "license": "ISC",
+  "dependencies": {
+    "@prisma/client": "^6.5.0",
+    "@web3-storage/w3up-client": "^17.2.0",
+    "axios": "^1.9.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "ethers": "^6.13.7",
+    "express": "^4.21.2",
+    "fetch-blob": "^4.0.0",
+    "files-from-path": "^1.1.4",
+    "http-status-codes": "^2.2.0",
+    "ipfs-http-client": "^60.0.1",
+    "jsonwebtoken": "^9.0.2",
+    "morgan": "^1.10.0",
+    "multer": "^1.4.5-lts.1",
+    "pupeteer": "^0.0.1",
+    "puppeteer": "^24.2.1",
+    "sequelize": "^6.31.1",
+    "sequelize-cli": "^6.6.0",
+    "winston": "^3.8.2"
+  },
+  "devDependencies": {
+    "prisma": "^6.5.0"
+  }
+}
