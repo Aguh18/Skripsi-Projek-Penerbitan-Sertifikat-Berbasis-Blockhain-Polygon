@@ -105,6 +105,13 @@ const IssueCertificate = () => {
 
         setIsSubmitting(true);
         try {
+            // Ambil issuerName dari localStorage userProfile
+            let issuerName = '-';
+            try {
+                const userProfile = JSON.parse(localStorage.getItem('userProfile') || '{}');
+                issuerName = userProfile.name || '-';
+            } catch { }
+
             const response = await axios.post(
                 `${getEnv('BASE_URL')}/api/certificate/generate-from-template`,
                 {
@@ -113,6 +120,7 @@ const IssueCertificate = () => {
                     issueDate: formData.issueDate,
                     expiryDate: formData.expiryDate || null, // Send null if not provided
                     targetAddress: formData.targetAddress,
+                    issuerName, // Kirim issuerName ke backend
                 },
                 {
                     headers: {
