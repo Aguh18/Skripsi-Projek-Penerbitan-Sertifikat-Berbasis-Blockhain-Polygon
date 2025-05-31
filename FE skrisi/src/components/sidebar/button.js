@@ -2,7 +2,7 @@ import React from 'react';
 import { NavLink } from 'react-router-dom';
 
 const SidebarButton = ({ props }) => {
-    const { text, icon, link, isActive } = props;
+    const { text, icon, link, isActive, isCollapsed } = props;
 
     const getIcon = (iconName) => {
         switch (iconName) {
@@ -58,17 +58,18 @@ const SidebarButton = ({ props }) => {
         <NavLink
             to={link}
             className={({ isActive }) =>
-                `flex items-center w-full px-4 py-2.5 text-gray-400 rounded-lg mb-1 transition-all duration-200 
+                `flex items-center w-full ${isCollapsed ? 'justify-center px-2' : 'px-4'} py-2.5 text-gray-400 rounded-lg mb-1 transition-all duration-200 
                 ${isActive
                     ? 'bg-blue-500/10 text-blue-400 font-medium border border-blue-500/20'
                     : 'hover:bg-gray-800/50 hover:text-gray-300 border border-transparent hover:border-gray-700/50'
                 }`
             }
+            title={isCollapsed ? text : ''}
         >
-            <span className={`mr-3 ${isActive ? 'text-blue-400' : 'text-gray-500'}`}>
+            <span className={`${isCollapsed ? '' : 'mr-3'} ${isActive ? 'text-blue-400' : 'text-gray-500'}`}>
                 {getIcon(icon)}
             </span>
-            <span className="text-sm">{text}</span>
+            {!isCollapsed && <span className="text-sm">{text}</span>}
         </NavLink>
     );
 };

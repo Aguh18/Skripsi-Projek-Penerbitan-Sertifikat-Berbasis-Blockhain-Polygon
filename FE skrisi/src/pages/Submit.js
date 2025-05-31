@@ -1,6 +1,6 @@
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useState, useEffect } from 'react';
-import { BrowserProvider, Contract, isAddress } from 'ethers';
+import { BrowserProvider, Contract, isAddress, keccak256 } from 'ethers';
 import contractABI from '../ABI.json';
 import { toast } from 'react-toastify';
 import { NETWORKS, CONTRACTS, DEFAULT_NETWORK, APP_CONFIG } from '../config/network';
@@ -16,6 +16,7 @@ const Submit = () => {
     const [contract, setContract] = useState(null);
     const [transactionStatus, setTransactionStatus] = useState('');
     const [error, setError] = useState('');
+    const [fileHash, setFileHash] = useState('-');
 
     const state = location.state;
 
@@ -110,6 +111,24 @@ const Submit = () => {
         }
     }, [state, navigate]);
 
+    // Generate hash from local file (PDF) after mount
+    useEffect(() => {
+        if (!state || !state.data || !state.data.filePath) return;
+        // Try to fetch the file as ArrayBuffer and hash it
+        const fetchAndHash = async () => {
+            try {
+                const response = await fetch(state.data.filePath);
+                const arrayBuffer = await response.arrayBuffer();
+                const uint8Array = new Uint8Array(arrayBuffer);
+                const hash = keccak256(uint8Array);
+                setFileHash(hash);
+            } catch (err) {
+                setFileHash('-');
+            }
+        };
+        fetchAndHash();
+    }, [state]);
+
     if (!state || !state.data) {
         return null;
     }
@@ -120,7 +139,7 @@ const Submit = () => {
     const fileCid = data.fileCid || 'https://bafybeibgunsp4yfmxonp4vji3ntzpyis32wh33hucb6tsdg4xbogdniyyu.ipfs.w3s.link/certificate_Asep_Teguh_hidayat_2025-05-04T03-57-46-396Z.pdf';
 
     const certificateData = {
-        id: data.id || 'CERT123',
+        id: data.hash || data.id || 'CERT123',
         certificateTitle: data.certificateTitle || 'Certificate of Achievement',
         expiryDate: data.expiryDate || '',
         issueDate: data.issueDate || '2025-05-16',
@@ -168,14 +187,14 @@ const Submit = () => {
 
             // Call the contract function
             const tx = await contract.issueCertificate(
-                certificateData.id,
-                certificateData.certificateTitle,
-                formattedExpiryDate,
-                formattedIssueDate,
-                formattedCid,
-                certificateData.issuerName,
-                certificateData.recipientName,
-                certificateData.targetAddress,
+                String(certificateData.id),
+                String(certificateData.certificateTitle),
+                String(formattedExpiryDate),
+                String(formattedIssueDate),
+                String(formattedCid),
+                String(certificateData.issuerName),
+                String(certificateData.recipientName),
+                String(certificateData.targetAddress),
                 { gasLimit: APP_CONFIG.maxGasLimit } // Use gas limit from config
             );
 
@@ -255,22 +274,13 @@ const Submit = () => {
                         <h2 className="text-xl font-semibold text-gray-300 mb-4">Data Sertifikat</h2>
 
                         <div className="space-y-4">
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-400 mb-1">ID Sertifikat</label>
-                                    <div className="bg-gray-800/50 p-3 rounded-lg border border-gray-700/30 font-mono text-sm text-gray-300 break-all">
-                                        {certificateData.id}
-                                    </div>
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-400 mb-1">Judul</label>
-                                    <div className="bg-gray-800/50 p-3 rounded-lg border border-gray-700/30 text-gray-300">
-                                        {certificateData.certificateTitle}
-                                    </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-400 mb-1">Judul</label>
+                                <div className="bg-gray-800/50 p-3 rounded-lg border border-gray-700/30 text-gray-300">
+                                    {certificateData.certificateTitle}
                                 </div>
                             </div>
-
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
                                     <label className="block text-sm font-medium text-gray-400 mb-1">Tanggal Terbit</label>
                                     <div className="bg-gray-800/50 p-3 rounded-lg border border-gray-700/30 text-gray-300">
@@ -284,32 +294,34 @@ const Submit = () => {
                                     </div>
                                 </div>
                             </div>
-
                             <div>
                                 <label className="block text-sm font-medium text-gray-400 mb-1">Penerbit</label>
                                 <div className="bg-gray-800/50 p-3 rounded-lg border border-gray-700/30 text-gray-300">
                                     {certificateData.issuerName}
                                 </div>
                             </div>
-
                             <div>
                                 <label className="block text-sm font-medium text-gray-400 mb-1">Penerima</label>
                                 <div className="bg-gray-800/50 p-3 rounded-lg border border-gray-700/30 text-gray-300">
                                     {certificateData.recipientName}
                                 </div>
                             </div>
-
                             <div>
                                 <label className="block text-sm font-medium text-gray-400 mb-1">Alamat Target</label>
                                 <div className="bg-gray-800/50 p-3 rounded-lg border border-gray-700/30 font-mono text-sm text-gray-300 break-all">
                                     {certificateData.targetAddress}
                                 </div>
                             </div>
-
                             <div>
                                 <label className="block text-sm font-medium text-gray-400 mb-1">CID File</label>
                                 <div className="bg-gray-800/50 p-3 rounded-lg border border-gray-700/30 font-mono text-sm text-gray-300 break-all">
                                     {certificateData.cid}
+                                </div>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-400 mb-1">Hash File (keccak256)</label>
+                                <div className="bg-gray-800/50 p-3 rounded-lg border border-gray-700/30 font-mono text-sm text-gray-300 break-all">
+                                    {fileHash}
                                 </div>
                             </div>
                         </div>

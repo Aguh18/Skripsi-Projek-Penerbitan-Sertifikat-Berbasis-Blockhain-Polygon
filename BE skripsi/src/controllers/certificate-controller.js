@@ -191,6 +191,8 @@ const issueCertificate = async (req, res) => {
       }
     });
 
+    const hash = keccak256(fileContent);
+
     return res.status(StatusCodes.CREATED).json({
       success: true,
       message: 'Sertifikat berhasil diterbitkan',
@@ -198,6 +200,7 @@ const issueCertificate = async (req, res) => {
       data: {
         ...certificate,
         fileCid: `https://${cid}.ipfs.w3s.link/${fileName}`,
+        hash,
       },
     });
 
@@ -356,4 +359,19 @@ async function getTemplateHandler(req, res) {
   }
 }
 
-module.exports = { create, issueCertificate, verifyCertificate, uploadTemplateHandler, getTemplateHandler };
+const getCertificatesByTargetAddress = async (req, res) => {
+  try {
+    const { walletAddress } = req.user;
+    if (!walletAddress) {
+      return res.status(400).json({ success: false, message: "Wallet address tidak ditemukan" });
+    }
+    const certificates = await prisma.certificate.findMany({
+      where: { targetAddress: walletAddress }
+    });
+    res.json({ success: true, data: certificates });
+  } catch (err) {
+    res.status(500).json({ success: false, message: "Gagal mengambil data sertifikat", error: err.message });
+  }
+};
+
+module.exports = { create, issueCertificate, verifyCertificate, uploadTemplateHandler, getTemplateHandler, getCertificatesByTargetAddress };

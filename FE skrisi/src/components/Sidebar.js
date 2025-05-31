@@ -1,17 +1,38 @@
 import { useLocation } from 'react-router-dom';
+import { useState } from 'react';
 import SidebarButton from "./sidebar/button";
 
 function Sidebar() {
     const location = useLocation();
+    const [isCollapsed, setIsCollapsed] = useState(false);
 
     const isActive = (path) => {
         return location.pathname === path;
     };
 
+    const toggleSidebar = () => {
+        setIsCollapsed(!isCollapsed);
+    };
+
     return (
-        <aside className="w-full h-full bg-gray-900/50 backdrop-blur-sm border-r border-gray-800/50 py-6">
-            <div className="px-4 space-y-1">
-                <div className="px-4 mb-6">
+        <aside className={`${isCollapsed ? 'w-20' : 'w-64'} transition-all duration-300 h-full bg-gray-900/50 backdrop-blur-sm border-r border-gray-800/50 py-6`}>
+            <div className={`px-4 space-y-1 ${isCollapsed ? 'px-2' : ''}`}>
+                <div className="flex justify-end mb-2">
+                    <button
+                        onClick={toggleSidebar}
+                        className="bg-gray-800 rounded-full p-1 hover:bg-gray-700 transition-colors"
+                    >
+                        <svg
+                            className={`w-4 h-4 text-gray-400 transform transition-transform ${isCollapsed ? 'rotate-180' : ''}`}
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                        >
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                        </svg>
+                    </button>
+                </div>
+                <div className={`${isCollapsed ? 'px-2' : 'px-4'} mb-6`}>
                     <div className="h-px bg-gradient-to-r from-transparent via-gray-700 to-transparent"></div>
                 </div>
                 <SidebarButton
@@ -19,7 +40,8 @@ function Sidebar() {
                         text: 'Dashboard',
                         icon: 'home',
                         link: '/dashboard',
-                        isActive: isActive('/dashboard')
+                        isActive: isActive('/dashboard'),
+                        isCollapsed
                     }}
                 />
                 <SidebarButton
@@ -27,7 +49,8 @@ function Sidebar() {
                         text: 'Kelola Sertifikat',
                         icon: 'certificate',
                         link: '/certificates',
-                        isActive: isActive('/certificates')
+                        isActive: isActive('/certificates'),
+                        isCollapsed
                     }}
                 />
                 <SidebarButton
@@ -35,7 +58,8 @@ function Sidebar() {
                         text: 'Terbitkan Sertifikat',
                         icon: 'plus-circle',
                         link: '/issue-certificate',
-                        isActive: isActive('/issue-certificate')
+                        isActive: isActive('/issue-certificate'),
+                        isCollapsed
                     }}
                 />
                 <SidebarButton
@@ -43,7 +67,8 @@ function Sidebar() {
                         text: 'Template',
                         icon: 'upload',
                         link: '/upload-template',
-                        isActive: isActive('/upload-template')
+                        isActive: isActive('/upload-template'),
+                        isCollapsed
                     }}
                 />
                 <SidebarButton
@@ -51,7 +76,8 @@ function Sidebar() {
                         text: 'Verifikasi Sertifikat',
                         icon: 'check-circle',
                         link: '/verify-certificate',
-                        isActive: isActive('/verify-certificate')
+                        isActive: isActive('/verify-certificate'),
+                        isCollapsed
                     }}
                 />
                 <SidebarButton
@@ -59,7 +85,8 @@ function Sidebar() {
                         text: 'Riwayat Aktivitas',
                         icon: 'clock',
                         link: '/activity-log',
-                        isActive: isActive('/activity-log')
+                        isActive: isActive('/activity-log'),
+                        isCollapsed
                     }}
                 />
                 <SidebarButton
@@ -67,10 +94,11 @@ function Sidebar() {
                         text: 'Pengaturan',
                         icon: 'gear',
                         link: '/settings',
-                        isActive: isActive('/settings')
+                        isActive: isActive('/settings'),
+                        isCollapsed
                     }}
                 />
-                <div className="px-4 mt-6">
+                <div className={`${isCollapsed ? 'px-2' : 'px-4'} mt-6`}>
                     <div className="h-px bg-gradient-to-r from-transparent via-gray-700 to-transparent"></div>
                 </div>
             </div>
