@@ -54,47 +54,42 @@ const contractABI = [
 const contractAddress = process.env.REACT_APP_CONTRACT_ADDRESS;
 
 function Login() {
-    const [account, setAccount] = useState(localStorage.getItem("walletAddress") || "");
+    const [account, setAccount] = useState("");
     const [isLoading, setIsLoading] = useState(false);
     const [walletType, setWalletType] = useState(null);
     const navigate = useNavigate();
 
     const connectMetaMask = async () => {
-        if (window.ethereum) {
+        if (typeof window.ethereum !== "undefined") {
             try {
                 setIsLoading(true);
                 setWalletType('metamask');
+                // Request account access first
+                const accounts = await window.ethereum.request({ method: "eth_requestAccounts" });
+                if (!accounts || accounts.length === 0) throw new Error("No accounts found");
+                const walletAddress = accounts[0];
+                // ethers v6: BrowserProvider
                 const provider = new BrowserProvider(window.ethereum);
                 const signer = await provider.getSigner();
-                const contractInstance = new Contract(contractAddress, contractABI, signer);
-
-                await window.ethereum.request({
-                    method: "wallet_requestPermissions",
-                    params: [{ eth_accounts: {} }],
-                });
-
-                const accounts = await window.ethereum.request({ method: "eth_requestAccounts" });
-                const walletAddress = accounts[0];
+                // Buat pesan untuk ditandatangani
                 const nonce = Math.random().toString(36).substring(2);
                 const message = `Sign to login to MyDapp at ${new Date().toISOString()} with nonce: ${nonce}`;
-
+                // ethers v6: signMessage ada di signer
                 const signature = await signer.signMessage(message);
-
+                // Kirim ke backend
                 const response = await axios.post("http://localhost:5000/api/account/login", {
                     walletAddress,
                     message,
                     signature,
                     walletType: 'metamask'
                 });
-
                 if (response.status !== 200) {
                     throw new Error("Login failed");
                 }
-
                 localStorage.setItem("walletAddress", walletAddress);
                 localStorage.setItem("token", response.data.data.token);
                 localStorage.setItem("walletType", "metamask");
-
+                setAccount(walletAddress);
                 // Fetch user profile after login and store in localStorage
                 try {
                     const token = response.data.data.token;
@@ -106,11 +101,14 @@ function Login() {
                 } catch (profileErr) {
                     localStorage.setItem('userProfile', JSON.stringify({ name: '-', email: '-' }));
                 }
-
                 navigate("/dashboard");
             } catch (error) {
                 console.error(error);
-                alert("Failed to connect MetaMask. Please try again.");
+                if (error.code === 4001) {
+                    alert("You must approve MetaMask connection to continue.");
+                } else {
+                    alert("Failed to connect MetaMask. Please try again.\n" + error.message);
+                }
             } finally {
                 setIsLoading(false);
             }
@@ -121,7 +119,7 @@ function Login() {
 
     const disconnectWallet = async () => {
         try {
-            setAccount(null);
+            setAccount("");
             localStorage.removeItem("walletAddress");
             localStorage.removeItem("token");
             localStorage.removeItem("walletType");

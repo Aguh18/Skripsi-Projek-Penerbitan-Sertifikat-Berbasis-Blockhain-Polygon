@@ -140,6 +140,19 @@ const issueCertificate = async (req, res) => {
       });
     }
 
+    // Check if recipient exists, if not create new user
+    const recipient = await prisma.user.upsert({
+      where: {
+        walletAddress: targetAddress
+      },
+      update: {}, // Tidak update apa-apa jika user sudah ada
+      create: {
+        walletAddress: targetAddress,
+        name: recipientName, // Gunakan recipientName sebagai nama awal
+        createdAt: new Date()
+      }
+    });
+
     const result = await generateCertificateFromTemplate({
       template,
       recipientName,
