@@ -11,6 +11,7 @@ const { keccak256 } = require('ethers');
 const fss = require('fs/promises');
 const { prisma } = require('../config');
 const { decodeToken } = require('../utils/jwt');
+const { deleteTemplate } = require('../services/certificate-service');
 
 const create = async (req, res) => {
   // HTML template sertifikat dengan styling menggunakan CSS inline
@@ -339,6 +340,7 @@ async function getTemplateHandler(req, res) {
     const templates = await prisma.template.findMany({
       where: {
         userId: userData.walletAddress,
+        isDeleted: false
       },
       select: {
         id: true,
@@ -387,4 +389,63 @@ const getCertificatesByTargetAddress = async (req, res) => {
   }
 };
 
-module.exports = { create, issueCertificate, verifyCertificate, uploadTemplateHandler, getTemplateHandler, getCertificatesByTargetAddress };
+const deleteTemplateHandler = async (req, res) => {
+  try {
+    const { templateId } = req.params;
+    const userData = decodeToken(req.headers.authorization);
+
+    if (!userData?.walletAddress) {
+      return res.status(StatusCodes.UNAUTHORIZED).json({
+        success: false,
+        message: 'Token tidak valid atau kadaluarsa',
+        error: 'Invalid or expired token',
+        data: {},
+      });
+    }
+
+    // Check if template exists and belongs to the user
+    const template = await prisma.template.findFirst({
+      where: {
+        id: parseInt(templateId),
+        userId: userData.walletAddress,
+        isDeleted: false
+      }
+    });
+
+    if (!template) {
+      return res.status(StatusCodes.NOT_FOUND).json({
+        success: false,
+        message: 'Template tidak ditemukan atau anda tidak memiliki akses',
+        error: 'Template not found or unauthorized',
+        data: {},
+      });
+    }
+
+    // Perform soft delete
+    await prisma.template.update({
+      where: {
+        id: parseInt(templateId)
+      },
+      data: {
+        isDeleted: true
+      }
+    });
+
+    return res.status(StatusCodes.OK).json({
+      success: true,
+      message: 'Template berhasil dihapus',
+      error: {},
+      data: {},
+    });
+  } catch (error) {
+    console.error('Error in deleteTemplateHandler:', error);
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      success: false,
+      message: 'Gagal menghapus template',
+      error: error.message,
+      data: {},
+    });
+  }
+};
+
+module.exports = { create, issueCertificate, verifyCertificate, uploadTemplateHandler, getTemplateHandler, getCertificatesByTargetAddress, deleteTemplateHandler };

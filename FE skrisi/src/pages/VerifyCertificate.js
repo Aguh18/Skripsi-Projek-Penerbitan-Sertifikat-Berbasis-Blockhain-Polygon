@@ -177,12 +177,24 @@ const VerifyCertificate = () => {
                 <label className="block text-sm font-medium text-gray-400 mb-2">
                   Upload File Sertifikat
                 </label>
-                <input
-                  type="file"
-                  accept=".pdf"
-                  onChange={handleFileChange}
-                  className="w-full p-2 bg-gray-800/50 border border-gray-700/30 rounded-lg text-gray-300"
-                />
+                <div className="relative">
+                  <input
+                    type="file"
+                    accept=".pdf"
+                    onChange={handleFileChange}
+                    className="w-full p-2 bg-gray-800/50 border border-gray-700/30 rounded-lg text-gray-300 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-500/20 file:text-blue-400 hover:file:bg-blue-500/30"
+                  />
+                </div>
+                <p className="mt-2 text-sm text-gray-500">Upload file PDF sertifikat untuk verifikasi otomatis</p>
+              </div>
+
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center" aria-hidden="true">
+                  <div className="w-full border-t border-gray-700/30"></div>
+                </div>
+                <div className="relative flex justify-center text-sm">
+                  <span className="px-2 bg-gray-900 text-gray-400">atau</span>
+                </div>
               </div>
 
               <div>
@@ -194,14 +206,18 @@ const VerifyCertificate = () => {
                   value={certificateId}
                   onChange={handleCertificateIdChange}
                   placeholder="Masukkan ID Sertifikat"
-                  className="w-full p-3 bg-gray-800/50 border border-gray-700/30 rounded-lg text-gray-300 font-mono text-sm"
+                  className="w-full p-3 bg-gray-800/50 border border-gray-700/30 rounded-lg text-gray-300 font-mono text-sm focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all"
                 />
+                <p className="mt-2 text-sm text-gray-500">Masukkan ID sertifikat untuk verifikasi manual</p>
               </div>
 
               <button
                 onClick={handleVerify}
-                disabled={!contract || loading}
-                className="w-full btn-primary relative"
+                disabled={!contract || loading || (!certificateId && !selectedFile)}
+                className={`w-full btn-primary relative transition-all ${(!contract || loading || (!certificateId && !selectedFile))
+                    ? 'opacity-50 cursor-not-allowed'
+                    : 'hover:bg-blue-600'
+                  }`}
               >
                 {loading ? (
                   <>
@@ -224,10 +240,10 @@ const VerifyCertificate = () => {
           </div>
 
           {/* Certificate Details Section */}
-          {certificateData && (
-            <div className="card space-y-6">
-              <h2 className="text-xl font-semibold text-gray-300 mb-4">Detail Sertifikat</h2>
+          <div className="card space-y-6">
+            <h2 className="text-xl font-semibold text-gray-300 mb-4">Detail Sertifikat</h2>
 
+            {certificateData ? (
               <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
@@ -297,8 +313,20 @@ const VerifyCertificate = () => {
                   </div>
                 </div>
               </div>
-            </div>
-          )}
+            ) : (
+              <div className="flex flex-col items-center justify-center h-[calc(100vh-24rem)] text-center p-6">
+                <div className="w-16 h-16 mb-4 rounded-full bg-gray-800/50 flex items-center justify-center">
+                  <svg className="w-8 h-8 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                </div>
+                <h3 className="text-lg font-medium text-gray-300 mb-2">Belum ada sertifikat</h3>
+                <p className="text-gray-500 max-w-sm">
+                  Upload file sertifikat atau masukkan ID sertifikat untuk memulai verifikasi
+                </p>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* PDF Preview Section */}

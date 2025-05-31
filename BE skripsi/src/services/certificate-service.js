@@ -271,7 +271,10 @@ async function getTemplate(req) {
     const userId = decodeToken(req.headers.authorization).walletAddress;
     try {
         const templates = await prisma.template.findMany({
-            where: { userId: userId },
+            where: {
+                userId: userId,
+                isDeleted: false // Hanya ambil template yang belum dihapus
+            },
         });
 
         if (!templates) {
@@ -283,7 +286,6 @@ async function getTemplate(req) {
 
     } catch (error) {
         throw new Error('Error fetching template: ' + error.message);
-
     }
 }
 
@@ -506,11 +508,42 @@ async function generateCertificateFromTemplate(params) {
     }
 }
 
+const deleteTemplate = async (templateId, walletAddress) => {
+    try {
+        const template = await prisma.template.findFirst({
+            where: {
+                id: templateId,
+                userId: walletAddress,
+                isDeleted: false
+            }
+        });
+
+        if (!template) {
+            throw new Error('Template tidak ditemukan');
+        }
+
+        await prisma.template.update({
+            where: {
+                id: templateId
+            },
+            data: {
+                isDeleted: true
+            }
+        });
+
+        return { success: true, message: 'Template berhasil dihapus' };
+    } catch (error) {
+        console.error('Error in deleteTemplate:', error);
+        throw error;
+    }
+};
+
 export {
     generateCertificate,
     uploadTemplate,
     verifyCertificate,
     getTemplate,
-    generateCertificateFromTemplate
+    generateCertificateFromTemplate,
+    deleteTemplate
 };
 export default generateCertificate;

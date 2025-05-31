@@ -11,6 +11,7 @@ router.post("/generate-from-template", upload.none(), authMiddleware, Certificat
 router.post("/verify", authMiddleware, CertificateController.verifyCertificate);
 router.post("/upload-template", upload.single('template'), authMiddleware, CertificateController.uploadTemplateHandler);
 router.get("/template", authMiddleware, CertificateController.getTemplateHandler);
+router.delete("/template/:templateId", authMiddleware, CertificateController.deleteTemplateHandler);
 router.get("/by-target", authMiddleware, CertificateController.getCertificatesByTargetAddress);
 
 module.exports = router;

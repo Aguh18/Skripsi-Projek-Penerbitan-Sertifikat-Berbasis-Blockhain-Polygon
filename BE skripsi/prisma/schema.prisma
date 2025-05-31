@@ -26,6 +26,7 @@ model Template {
   filePath   String    @db.VarChar(255) 
   nameX      Float?    // Koordinat X untuk posisi nama (persentase, nullable)
   nameY      Float?    // Koordinat Y untuk posisi nama (persentase, nullable)
+  isDeleted  Boolean   @default(false)
   createdAt  DateTime  @default(now())
   updatedAt  DateTime  @updatedAt
   certificates Certificate[] 

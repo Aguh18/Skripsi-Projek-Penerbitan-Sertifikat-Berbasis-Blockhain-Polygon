@@ -21,6 +21,8 @@ import VerifyCertificate from './pages/VerifyCertificate';
 import UploadCert from './pages/UploadCert';
 import Settings from './pages/Settings';
 import History from './pages/History';
+import Certificates from './pages/Certificates';
+import Templates from './pages/Templates';
 import ProtectedRoute from './components/ProtectedRoute';
 
 // Create axios instance
@@ -78,10 +80,10 @@ function App() {
             <Route element={<ProtectedRoute />}>
               <Route path="/" element={<Root />}>
                 <Route path="/dashboard" index element={<Dashboard />} />
-                <Route path="certificates" />
+                <Route path="certificates" element={<Certificates />} />
                 <Route path="issue-certificate" element={<IssueCertificate />} />
                 <Route path="issue-certificate/submit" element={<Submit />} />
-                <Route path="template" element={<UploadCert />} />
+                <Route path="template" element={<Templates />} />
                 <Route path="upload-template" element={<UploadCert />} />
                 <Route path="verify-certificate" element={<VerifyCertificate />} />
                 <Route path="activity-log" element={<History />} />

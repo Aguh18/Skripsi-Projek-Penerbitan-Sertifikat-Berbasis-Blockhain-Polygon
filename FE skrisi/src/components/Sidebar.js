@@ -2,16 +2,11 @@ import { useLocation } from 'react-router-dom';
 import { useState } from 'react';
 import SidebarButton from "./sidebar/button";
 
-function Sidebar() {
+function Sidebar({ isCollapsed, onToggle }) {
     const location = useLocation();
-    const [isCollapsed, setIsCollapsed] = useState(false);
 
     const isActive = (path) => {
         return location.pathname === path;
-    };
-
-    const toggleSidebar = () => {
-        setIsCollapsed(!isCollapsed);
     };
 
     return (
@@ -19,7 +14,7 @@ function Sidebar() {
             <div className={`px-4 space-y-1 ${isCollapsed ? 'px-2' : ''}`}>
                 <div className="flex justify-end mb-2">
                     <button
-                        onClick={toggleSidebar}
+                        onClick={onToggle}
                         className="bg-gray-800 rounded-full p-1 hover:bg-gray-700 transition-colors"
                     >
                         <svg
@@ -46,7 +41,7 @@ function Sidebar() {
                 />
                 <SidebarButton
                     props={{
-                        text: 'Kelola Sertifikat',
+                        text: 'Sertifikat',
                         icon: 'certificate',
                         link: '/certificates',
                         isActive: isActive('/certificates'),
@@ -55,19 +50,10 @@ function Sidebar() {
                 />
                 <SidebarButton
                     props={{
-                        text: 'Terbitkan Sertifikat',
-                        icon: 'plus-circle',
-                        link: '/issue-certificate',
-                        isActive: isActive('/issue-certificate'),
-                        isCollapsed
-                    }}
-                />
-                <SidebarButton
-                    props={{
                         text: 'Template',
                         icon: 'upload',
-                        link: '/upload-template',
-                        isActive: isActive('/upload-template'),
+                        link: '/template',
+                        isActive: isActive('/template'),
                         isCollapsed
                     }}
                 />
