@@ -1,9 +1,0 @@
--- DropIndex
-DROP INDEX "User_walletAddress_key";
-
--- AlterTable
-ALTER TABLE "User" ALTER COLUMN "name" DROP NOT NULL,
-ALTER COLUMN "email" DROP NOT NULL,
-ALTER COLUMN "password" DROP NOT NULL,
-ALTER COLUMN "createdAt" DROP NOT NULL,
-ALTER COLUMN "createdAt" DROP DEFAULT;

@@ -1,8 +1,22 @@
 -- CreateTable
+CREATE TABLE "User" (
+    "walletAddress" TEXT NOT NULL,
+    "name" TEXT,
+    "email" TEXT,
+    "password" TEXT,
+    "createdAt" TIMESTAMP(3),
+
+    CONSTRAINT "User_pkey" PRIMARY KEY ("walletAddress")
+);
+
+-- CreateTable
 CREATE TABLE "Template" (
     "id" SERIAL NOT NULL,
-    "name" VARCHAR(100) NOT NULL,
+    "userId" VARCHAR(255) NOT NULL,
+    "name" VARCHAR(255) NOT NULL,
     "filePath" VARCHAR(255) NOT NULL,
+    "nameX" DOUBLE PRECISION,
+    "nameY" DOUBLE PRECISION,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
@@ -27,6 +41,8 @@ CREATE TABLE "Certificate" (
     "hash" VARCHAR(64),
     "qrCodeUrl" VARCHAR(255),
     "filePath" VARCHAR(255) NOT NULL,
+    "ipfsCid" VARCHAR(255) NOT NULL,
+    "status" VARCHAR(20) NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
@@ -34,10 +50,19 @@ CREATE TABLE "Certificate" (
 );
 
 -- CreateIndex
-CREATE UNIQUE INDEX "Template_name_key" ON "Template"("name");
+CREATE UNIQUE INDEX "User_email_key" ON "User"("email");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "Certificate_certificateNumber_key" ON "Certificate"("certificateNumber");
 
 -- AddForeignKey
+ALTER TABLE "Template" ADD CONSTRAINT "Template_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("walletAddress") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "Certificate" ADD CONSTRAINT "Certificate_templateId_fkey" FOREIGN KEY ("templateId") REFERENCES "Template"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Certificate" ADD CONSTRAINT "Certificate_issuerAddress_fkey" FOREIGN KEY ("issuerAddress") REFERENCES "User"("walletAddress") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Certificate" ADD CONSTRAINT "Certificate_targetAddress_fkey" FOREIGN KEY ("targetAddress") REFERENCES "User"("walletAddress") ON DELETE RESTRICT ON UPDATE CASCADE;
