@@ -1,14 +1,21 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 
 function Navbar() {
     const [isProfileOpen, setIsProfileOpen] = useState(false);
     const navigate = useNavigate();
+    const { logout } = useAuth();
     const walletAddress = localStorage.getItem('walletAddress');
 
     const handleLogout = () => {
-        localStorage.removeItem('walletAddress');
-        localStorage.removeItem('token');
+        // Clear all localStorage data
+        localStorage.clear();
+        // Call logout from AuthContext to clear the auth state
+        logout();
+        // Close the profile dropdown
+        setIsProfileOpen(false);
+        // Navigate to login page
         navigate('/login');
     };
 

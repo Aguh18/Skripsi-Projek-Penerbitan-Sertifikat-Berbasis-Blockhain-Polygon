@@ -3,61 +3,19 @@ import { useNavigate } from "react-router-dom";
 import { BrowserProvider, Contract } from "ethers";
 import axios from 'axios';
 import { getEnv } from '../utils/env';
-
-
-
-const contractABI = [
-    {
-        "anonymous": false,
-        "inputs": [
-            {
-                "indexed": false,
-                "internalType": "uint256",
-                "name": "newValue",
-                "type": "uint256"
-            }
-        ],
-        "name": "ValueChanged",
-        "type": "event"
-    },
-    {
-        "inputs": [],
-        "name": "getValue",
-        "outputs": [
-            {
-                "internalType": "uint256",
-                "name": "",
-                "type": "uint256"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "uint256",
-                "name": "_value",
-                "type": "uint256"
-            }
-        ],
-        "name": "setValue",
-        "outputs": [],
-        "stateMutability": "nonpayable",
-        "type": "function"
-    }
-];
-
+import { useAuth } from '../context/AuthContext';
 
 
 
 const contractAddress = process.env.REACT_APP_CONTRACT_ADDRESS;
+const baseUrl = process.env.REACT_APP_BASE_URL;
 
 function Login() {
     const [account, setAccount] = useState("");
     const [isLoading, setIsLoading] = useState(false);
     const [walletType, setWalletType] = useState(null);
     const navigate = useNavigate();
+    const { login, logout } = useAuth();
 
     const connectMetaMask = async () => {
         if (typeof window.ethereum !== "undefined") {
@@ -77,30 +35,39 @@ function Login() {
                 // ethers v6: signMessage ada di signer
                 const signature = await signer.signMessage(message);
                 // Kirim ke backend
-                const response = await axios.post("http://localhost:5000/api/account/login", {
+                const response = await axios.post(baseUrl + "/api/account/login", {
                     walletAddress,
                     message,
                     signature,
                     walletType: 'metamask'
                 });
+
                 if (response.status !== 200) {
                     throw new Error("Login failed");
                 }
+
+                const { token, user } = response.data.data;
+                console.log('Login response:', response.data.data); // Debug log
+
+                // Store all user data including role in localStorage
                 localStorage.setItem("walletAddress", walletAddress);
-                localStorage.setItem("token", response.data.data.token);
+                localStorage.setItem("token", token);
                 localStorage.setItem("walletType", "metamask");
+
+
+                const userData = {
+                    walletAddress,
+                    name: user.name || '-',
+                    email: user.email || '-',
+                    role: user.role || 'verifier'
+                };
+                console.log('Storing user data:', userData); // Debug log
+                localStorage.setItem('userProfile', JSON.stringify(userData));
+
+                // Set user data in AuthContext
+                await login(userData);
+
                 setAccount(walletAddress);
-                // Fetch user profile after login and store in localStorage
-                try {
-                    const token = response.data.data.token;
-                    const meRes = await axios.get(`${getEnv('BASE_URL')}/api/account/me`, {
-                        headers: { Authorization: `Bearer ${token}` }
-                    });
-                    const { name, email } = meRes.data.data;
-                    localStorage.setItem('userProfile', JSON.stringify({ name, email }));
-                } catch (profileErr) {
-                    localStorage.setItem('userProfile', JSON.stringify({ name: '-', email: '-' }));
-                }
                 navigate("/dashboard");
             } catch (error) {
                 console.error(error);
@@ -120,9 +87,10 @@ function Login() {
     const disconnectWallet = async () => {
         try {
             setAccount("");
-            localStorage.removeItem("walletAddress");
-            localStorage.removeItem("token");
-            localStorage.removeItem("walletType");
+            // Clear all localStorage data
+            localStorage.clear();
+            // Call logout from AuthContext to clear the auth state
+            logout();
             alert("Wallet disconnected! Connect again to use the app.");
         } catch (error) {
             console.error("Error disconnecting wallet:", error);

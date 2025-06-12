@@ -1,76 +1,98 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { FiPlus, FiDownload, FiEye, FiCheckCircle, FiXCircle } from 'react-icons/fi';
+import axios from 'axios';
+import { getEnv } from '../utils/env';
+import { toast } from 'react-toastify';
+import { useAuth } from '../context/AuthContext';
 
 const Certificates = () => {
-    const [activeTab, setActiveTab] = useState('issued');
+    const { isIssuer, isVerifier } = useAuth();
+    const [activeTab, setActiveTab] = useState(isVerifier() ? 'received' : 'issued');
+    const [issuedCertificates, setIssuedCertificates] = useState([]);
+    const [receivedCertificates, setReceivedCertificates] = useState([]);
+    const [loading, setLoading] = useState(true);
 
-    // Dummy data untuk sertifikat yang diterbitkan
-    const issuedCertificates = [
-        {
-            id: 'CERT-001',
-            title: 'Sertifikat Kelulusan',
-            recipient: 'John Doe',
-            issueDate: '2024-03-15',
-            expiryDate: '2025-03-15',
-            status: 'active',
-            targetAddress: '0x1234...5678'
-        },
-        {
-            id: 'CERT-002',
-            title: 'Sertifikat Workshop',
-            recipient: 'Jane Smith',
-            issueDate: '2024-03-10',
-            expiryDate: '2025-03-10',
-            status: 'active',
-            targetAddress: '0x8765...4321'
-        },
-        // Tambahkan data dummy lainnya
-    ];
+    useEffect(() => {
+        fetchCertificates();
+    }, [activeTab]);
 
-    // Dummy data untuk sertifikat yang diterima
-    const receivedCertificates = [
-        {
-            id: 'CERT-003',
-            title: 'Sertifikat Pelatihan',
-            issuer: 'Training Center',
-            issueDate: '2024-03-01',
-            expiryDate: '2025-03-01',
-            status: 'active',
-            issuerAddress: '0x9876...5432'
-        },
-        {
-            id: 'CERT-004',
-            title: 'Sertifikat Seminar',
-            issuer: 'Tech Conference',
-            issueDate: '2024-02-28',
-            expiryDate: '2025-02-28',
-            status: 'active',
-            issuerAddress: '0x2468...1357'
-        },
-        // Tambahkan data dummy lainnya
-    ];
+    const fetchCertificates = async () => {
+        try {
+            setLoading(true);
+            const token = localStorage.getItem('token');
+            if (!token) {
+                toast.error('Silakan login terlebih dahulu');
+                return;
+            }
+
+            const endpoint = activeTab === 'issued'
+                ? `${getEnv('BASE_URL')}/api/certificate/by-issuer`
+                : `${getEnv('BASE_URL')}/api/certificate/by-target`;
+
+            const response = await axios.get(endpoint, {
+                headers: {
+                    Authorization: `Bearer ${token}`
+                }
+            });
+
+            if (response.data.success) {
+                if (activeTab === 'issued') {
+                    setIssuedCertificates(response.data.data);
+                } else {
+                    setReceivedCertificates(response.data.data);
+                }
+            }
+        } catch (error) {
+            console.error('Error fetching certificates:', error);
+            toast.error('Gagal mengambil data sertifikat');
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const getStatusBadge = (status) => {
         const statusConfig = {
-            active: {
+            ACTIVE: {
                 color: 'bg-green-500/10 text-green-400 border-green-500/20',
                 icon: <FiCheckCircle className="w-4 h-4" />
             },
-            expired: {
+            EXPIRED: {
                 color: 'bg-red-500/10 text-red-400 border-red-500/20',
                 icon: <FiXCircle className="w-4 h-4" />
             }
         };
 
-        const config = statusConfig[status] || statusConfig.active;
+        const config = statusConfig[status] || statusConfig.ACTIVE;
 
         return (
             <div className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${config.color}`}>
                 {config.icon}
-                <span className="ml-1.5 capitalize">{status}</span>
+                <span className="ml-1.5 capitalize">{status.toLowerCase()}</span>
             </div>
         );
+    };
+
+    const handleDownload = async (certificate) => {
+        try {
+            const response = await axios.get(certificate.filePath, {
+                responseType: 'blob'
+            });
+            const url = window.URL.createObjectURL(new Blob([response.data]));
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', `certificate-${certificate.id}.pdf`);
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+        } catch (error) {
+            console.error('Error downloading certificate:', error);
+            toast.error('Gagal mengunduh sertifikat');
+        }
+    };
+
+    const handleView = (certificate) => {
+        window.open(certificate.filePath, '_blank');
     };
 
     return (
@@ -78,33 +100,37 @@ const Certificates = () => {
             <div className="max-w-7xl mx-auto p-6">
                 <div className="flex justify-between items-center mb-6">
                     <h1 className="text-2xl font-bold text-gradient">Sertifikat</h1>
-                    <Link
-                        to="/issue-certificate"
-                        className="btn-primary inline-flex items-center"
-                    >
-                        <FiPlus className="w-5 h-5 mr-2" />
-                        Terbitkan Sertifikat
-                    </Link>
+                    {isIssuer() && (
+                        <Link
+                            to="/issue-certificate"
+                            className="btn-primary inline-flex items-center"
+                        >
+                            <FiPlus className="w-5 h-5 mr-2" />
+                            Terbitkan Sertifikat
+                        </Link>
+                    )}
                 </div>
 
                 {/* Tabs */}
                 <div className="mb-6">
                     <div className="border-b border-gray-700/30">
                         <nav className="-mb-px flex space-x-8">
-                            <button
-                                onClick={() => setActiveTab('issued')}
-                                className={`${activeTab === 'issued'
+                            {isIssuer() && (
+                                <button
+                                    onClick={() => setActiveTab('issued')}
+                                    className={`${activeTab === 'issued'
                                         ? 'border-blue-500 text-blue-400'
                                         : 'border-transparent text-gray-400 hover:text-gray-300 hover:border-gray-300'
-                                    } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors`}
-                            >
-                                Sertifikat yang Diterbitkan
-                            </button>
+                                        } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors`}
+                                >
+                                    Sertifikat yang Diterbitkan
+                                </button>
+                            )}
                             <button
                                 onClick={() => setActiveTab('received')}
                                 className={`${activeTab === 'received'
-                                        ? 'border-blue-500 text-blue-400'
-                                        : 'border-transparent text-gray-400 hover:text-gray-300 hover:border-gray-300'
+                                    ? 'border-blue-500 text-blue-400'
+                                    : 'border-transparent text-gray-400 hover:text-gray-300 hover:border-gray-300'
                                     } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors`}
                             >
                                 Sertifikat yang Diterima
@@ -143,38 +169,58 @@ const Certificates = () => {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-700/30">
-                                {(activeTab === 'issued' ? issuedCertificates : receivedCertificates).map((cert) => (
-                                    <tr key={cert.id} className="hover:bg-gray-800/30 transition-colors">
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-300">
-                                            {cert.id}
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
-                                            {activeTab === 'issued' ? cert.recipient : cert.issuer}
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
-                                            {cert.title}
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
-                                            {cert.issueDate}
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
-                                            {cert.expiryDate}
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap">
-                                            {getStatusBadge(cert.status)}
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                            <div className="flex justify-end space-x-2">
-                                                <button className="text-gray-400 hover:text-gray-300 transition-colors">
-                                                    <FiEye className="w-5 h-5" />
-                                                </button>
-                                                <button className="text-gray-400 hover:text-gray-300 transition-colors">
-                                                    <FiDownload className="w-5 h-5" />
-                                                </button>
-                                            </div>
+                                {loading ? (
+                                    <tr>
+                                        <td colSpan="7" className="px-6 py-4 text-center text-gray-400">
+                                            Memuat data...
                                         </td>
                                     </tr>
-                                ))}
+                                ) : (activeTab === 'issued' ? issuedCertificates : receivedCertificates).length === 0 ? (
+                                    <tr>
+                                        <td colSpan="7" className="px-6 py-4 text-center text-gray-400">
+                                            Tidak ada sertifikat
+                                        </td>
+                                    </tr>
+                                ) : (
+                                    (activeTab === 'issued' ? issuedCertificates : receivedCertificates).map((cert) => (
+                                        <tr key={cert.id} className="hover:bg-gray-800/30 transition-colors">
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-300">
+                                                {cert.id.substring(0, 10)}...
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
+                                                {activeTab === 'issued' ? cert.recipientName : cert.issuerName}
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
+                                                {cert.certificateTitle}
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
+                                                {new Date(cert.issueDate).toLocaleDateString('id-ID')}
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
+                                                {cert.expiryDate ? new Date(cert.expiryDate).toLocaleDateString('id-ID') : '-'}
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                {getStatusBadge(cert.status)}
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                                <div className="flex justify-end space-x-2">
+                                                    <button
+                                                        onClick={() => handleView(cert)}
+                                                        className="text-gray-400 hover:text-gray-300 transition-colors"
+                                                    >
+                                                        <FiEye className="w-5 h-5" />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleDownload(cert)}
+                                                        className="text-gray-400 hover:text-gray-300 transition-colors"
+                                                    >
+                                                        <FiDownload className="w-5 h-5" />
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ))
+                                )}
                             </tbody>
                         </table>
                     </div>

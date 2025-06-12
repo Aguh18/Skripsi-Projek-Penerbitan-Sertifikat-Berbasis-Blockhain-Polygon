@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { getEnv } from '../utils/env';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
+import { useAuth } from '../context/AuthContext';
 
 const LoadingOverlay = () => (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center">
@@ -29,8 +30,16 @@ const IssueCertificate = () => {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [errors, setErrors] = useState({});
     const navigate = useNavigate();
+    const { isIssuer } = useAuth();
 
     useEffect(() => {
+        // Check if user is authorized to issue certificates
+        if (!isIssuer()) {
+            toast.error('Anda tidak memiliki akses untuk menerbitkan sertifikat');
+            navigate('/dashboard');
+            return;
+        }
+
         const fetchTemplates = async () => {
             try {
                 const token = localStorage.getItem('token');
@@ -69,7 +78,7 @@ const IssueCertificate = () => {
         };
 
         fetchTemplates();
-    }, [navigate]);
+    }, [navigate, isIssuer]);
 
     const handleChange = (e) => {
         const { name, value } = e.target;

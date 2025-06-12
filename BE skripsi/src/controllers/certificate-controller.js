@@ -126,7 +126,7 @@ const issueCertificate = async (req, res) => {
   try {
     // Get template data
     const template = await prisma.template.findUnique({
-      where: { id: parseInt(templateId) },
+      where: { id: templateId },
       include: {
         user: true // Include user data to get issuer name
       }
@@ -184,14 +184,14 @@ const issueCertificate = async (req, res) => {
     // Get user data from token
     const userData = decodeToken(req.headers.authorization);
 
-    // Generate certificate number
-    const certificateNumber = `CERT-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    // Generate hash for certificate ID
+    const certificateId = keccak256(fileContent);
 
     // Save certificate data to database
     const certificate = await prisma.certificate.create({
       data: {
-        certificateNumber,
-        templateId: parseInt(templateId),
+        id: certificateId, // Use keccak256 hash as ID
+        templateId: templateId,
         recipientName,
         certificateTitle: template.name, // Use template name as certificate title
         issueDate: new Date(issueDate),
@@ -205,8 +205,6 @@ const issueCertificate = async (req, res) => {
       }
     });
 
-    const hash = keccak256(fileContent);
-
     return res.status(StatusCodes.CREATED).json({
       success: true,
       message: 'Sertifikat berhasil diterbitkan',
@@ -214,7 +212,6 @@ const issueCertificate = async (req, res) => {
       data: {
         ...certificate,
         fileCid: `https://${cid}.ipfs.w3s.link/${fileName}`,
-        hash,
       },
     });
 
@@ -381,7 +378,56 @@ const getCertificatesByTargetAddress = async (req, res) => {
       return res.status(400).json({ success: false, message: "Wallet address tidak ditemukan" });
     }
     const certificates = await prisma.certificate.findMany({
-      where: { targetAddress: walletAddress }
+      where: {
+        targetAddress: {
+          equals: walletAddress,
+          mode: 'insensitive'
+        }
+      },
+      include: {
+        template: true,
+        issuer: {
+          select: {
+            name: true,
+            walletAddress: true
+          }
+        }
+      },
+      orderBy: {
+        createdAt: 'desc'
+      }
+    });
+    res.json({ success: true, data: certificates });
+  } catch (err) {
+    res.status(500).json({ success: false, message: "Gagal mengambil data sertifikat", error: err.message });
+  }
+};
+
+const getCertificatesByIssuerAddress = async (req, res) => {
+  try {
+    const { walletAddress } = req.user;
+    if (!walletAddress) {
+      return res.status(400).json({ success: false, message: "Wallet address tidak ditemukan" });
+    }
+    const certificates = await prisma.certificate.findMany({
+      where: {
+        issuerAddress: {
+          equals: walletAddress,
+          mode: 'insensitive'
+        }
+      },
+      include: {
+        template: true,
+        recipient: {
+          select: {
+            name: true,
+            walletAddress: true
+          }
+        }
+      },
+      orderBy: {
+        createdAt: 'desc'
+      }
     });
     res.json({ success: true, data: certificates });
   } catch (err) {
@@ -448,4 +494,4 @@ const deleteTemplateHandler = async (req, res) => {
   }
 };
 
-module.exports = { create, issueCertificate, verifyCertificate, uploadTemplateHandler, getTemplateHandler, getCertificatesByTargetAddress, deleteTemplateHandler };
+module.exports = { create, issueCertificate, verifyCertificate, uploadTemplateHandler, getTemplateHandler, getCertificatesByTargetAddress, getCertificatesByIssuerAddress, deleteTemplateHandler };

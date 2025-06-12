@@ -1,9 +1,11 @@
 import { useLocation } from 'react-router-dom';
 import { useState } from 'react';
 import SidebarButton from "./sidebar/button";
+import { useAuth } from '../context/AuthContext';
 
 function Sidebar({ isCollapsed, onToggle }) {
     const location = useLocation();
+    const { isIssuer, isVerifier } = useAuth();
 
     const isActive = (path) => {
         return location.pathname === path;
@@ -30,6 +32,8 @@ function Sidebar({ isCollapsed, onToggle }) {
                 <div className={`${isCollapsed ? 'px-2' : 'px-4'} mb-6`}>
                     <div className="h-px bg-gradient-to-r from-transparent via-gray-700 to-transparent"></div>
                 </div>
+
+                {/* Menu untuk semua user */}
                 <SidebarButton
                     props={{
                         text: 'Dashboard',
@@ -39,6 +43,8 @@ function Sidebar({ isCollapsed, onToggle }) {
                         isCollapsed
                     }}
                 />
+
+                {/* Menu Sertifikat untuk semua user */}
                 <SidebarButton
                     props={{
                         text: 'Sertifikat',
@@ -48,33 +54,34 @@ function Sidebar({ isCollapsed, onToggle }) {
                         isCollapsed
                     }}
                 />
-                <SidebarButton
-                    props={{
-                        text: 'Template',
-                        icon: 'upload',
-                        link: '/template',
-                        isActive: isActive('/template'),
-                        isCollapsed
-                    }}
-                />
-                <SidebarButton
-                    props={{
-                        text: 'Verifikasi Sertifikat',
-                        icon: 'check-circle',
-                        link: '/verify-certificate',
-                        isActive: isActive('/verify-certificate'),
-                        isCollapsed
-                    }}
-                />
-                <SidebarButton
-                    props={{
-                        text: 'Riwayat Aktivitas',
-                        icon: 'clock',
-                        link: '/activity-log',
-                        isActive: isActive('/activity-log'),
-                        isCollapsed
-                    }}
-                />
+
+                {/* Menu Template hanya untuk issuer */}
+                {isIssuer() && (
+                    <SidebarButton
+                        props={{
+                            text: 'Template',
+                            icon: 'upload',
+                            link: '/template',
+                            isActive: isActive('/template'),
+                            isCollapsed
+                        }}
+                    />
+                )}
+
+                {/* Menu untuk issuer dan verifier */}
+                {(isIssuer() || isVerifier()) && (
+                    <SidebarButton
+                        props={{
+                            text: 'Verifikasi Sertifikat',
+                            icon: 'check-circle',
+                            link: '/verify-certificate',
+                            isActive: isActive('/verify-certificate'),
+                            isCollapsed
+                        }}
+                    />
+                )}
+
+                {/* Menu untuk semua user */}
                 <SidebarButton
                     props={{
                         text: 'Pengaturan',
@@ -84,6 +91,7 @@ function Sidebar({ isCollapsed, onToggle }) {
                         isCollapsed
                     }}
                 />
+
                 <div className={`${isCollapsed ? 'px-2' : 'px-4'} mt-6`}>
                     <div className="h-px bg-gradient-to-r from-transparent via-gray-700 to-transparent"></div>
                 </div>

@@ -42,7 +42,12 @@ const me = async (req, res) => {
         }
         const user = await prisma.user.findUnique({
             where: { walletAddress },
-            select: { name: true, email: true }
+            select: {
+                name: true,
+                email: true,
+                role: true,
+                walletAddress: true
+            }
         });
         if (!user) {
             return res.status(404).json({ success: false, message: "User tidak ditemukan" });
@@ -50,8 +55,17 @@ const me = async (req, res) => {
         // If name or email is empty/null, return '-'
         const name = user.name && user.name.trim() !== '' ? user.name : '-';
         const email = user.email && user.email.trim() !== '' ? user.email : '-';
-        res.json({ success: true, data: { name, email } });
+        res.json({
+            success: true,
+            data: {
+                name,
+                email,
+                role: user.role || 'verifier', // Default to verifier if role is not set
+                walletAddress: user.walletAddress
+            }
+        });
     } catch (err) {
+        console.error('Error in /me endpoint:', err);
         res.status(500).json({ success: false, message: "Gagal mengambil data user", error: err.message });
     }
 };

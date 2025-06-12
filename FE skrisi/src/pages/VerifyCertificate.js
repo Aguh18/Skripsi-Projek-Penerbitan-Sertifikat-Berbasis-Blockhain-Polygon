@@ -3,6 +3,8 @@ import { BrowserProvider, Contract, keccak256 } from 'ethers';
 import { ethers } from 'ethers';
 import contractABI from '../ABI.json';
 import { toast } from 'react-toastify';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 
 const contractAddress = '0x5FbDB2315678afecb367f032d93F642f64180aa3';
 const networkConfig = {
@@ -21,6 +23,8 @@ const VerifyCertificate = () => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
+  const navigate = useNavigate();
+  const { isVerifier, isIssuer } = useAuth();
 
   // Function to format CID URL
   const formatCidUrl = (cid) => {
@@ -44,6 +48,13 @@ const VerifyCertificate = () => {
   };
 
   useEffect(() => {
+    // Check if user is authorized to verify certificates
+    if (!isVerifier() && !isIssuer()) {
+      toast.error('Anda tidak memiliki akses untuk memverifikasi sertifikat');
+      navigate('/dashboard');
+      return;
+    }
+
     const initEthers = async () => {
       if (!window.ethereum) {
         setError('MetaMask not detected.');
@@ -79,7 +90,7 @@ const VerifyCertificate = () => {
     };
 
     initEthers();
-  }, []);
+  }, [navigate, isVerifier, isIssuer]);
 
   const handleVerify = async () => {
     if (!contract || !certificateId.trim()) {
@@ -215,8 +226,8 @@ const VerifyCertificate = () => {
                 onClick={handleVerify}
                 disabled={!contract || loading || (!certificateId && !selectedFile)}
                 className={`w-full btn-primary relative transition-all ${(!contract || loading || (!certificateId && !selectedFile))
-                    ? 'opacity-50 cursor-not-allowed'
-                    : 'hover:bg-blue-600'
+                  ? 'opacity-50 cursor-not-allowed'
+                  : 'hover:bg-blue-600'
                   }`}
               >
                 {loading ? (
@@ -306,8 +317,8 @@ const VerifyCertificate = () => {
                 <div>
                   <label className="block text-sm font-medium text-gray-400 mb-1">Status</label>
                   <div className={`p-3 rounded-lg border ${certificateData.isValid
-                      ? 'bg-green-500/10 border-green-500/20 text-green-400'
-                      : 'bg-red-500/10 border-red-500/20 text-red-400'
+                    ? 'bg-green-500/10 border-green-500/20 text-green-400'
+                    : 'bg-red-500/10 border-red-500/20 text-red-400'
                     }`}>
                     {certificateData.isValid ? 'Valid' : 'Tidak Valid'}
                   </div>

@@ -1,305 +1,287 @@
-import React from 'react';
-import {
-    Chart as ChartJS,
-    CategoryScale,
-    LinearScale,
-    PointElement,
-    LineElement,
-    BarElement,
-    Title,
-    Tooltip,
-    Legend,
-    ArcElement,
-} from 'chart.js';
-import { Line, Bar, Doughnut } from 'react-chartjs-2';
-import {
-    DocumentCheckIcon,
-    ClockIcon,
-    ExclamationTriangleIcon,
-    CheckCircleIcon,
-} from '@heroicons/react/24/outline';
-
-ChartJS.register(
-    CategoryScale,
-    LinearScale,
-    PointElement,
-    LineElement,
-    BarElement,
-    Title,
-    Tooltip,
-    Legend,
-    ArcElement
-);
-
-// Dummy data for charts
-const monthlyData = {
-    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun'],
-    datasets: [
-        {
-            label: 'Sertifikat Diterbitkan',
-            data: [12, 19, 15, 25, 22, 30],
-            borderColor: 'rgb(59, 130, 246)',
-            backgroundColor: 'rgba(59, 130, 246, 0.5)',
-            tension: 0.4,
-        },
-    ],
-};
-
-const categoryData = {
-    labels: ['Akademik', 'Profesional', 'Pelatihan', 'Lainnya'],
-    datasets: [
-        {
-            data: [35, 25, 20, 20],
-            backgroundColor: [
-                'rgba(59, 130, 246, 0.8)',
-                'rgba(16, 185, 129, 0.8)',
-                'rgba(245, 158, 11, 0.8)',
-                'rgba(139, 92, 246, 0.8)',
-            ],
-            borderColor: [
-                'rgba(59, 130, 246, 1)',
-                'rgba(16, 185, 129, 1)',
-                'rgba(245, 158, 11, 1)',
-                'rgba(139, 92, 246, 1)',
-            ],
-            borderWidth: 1,
-        },
-    ],
-};
-
-const verificationData = {
-    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun'],
-    datasets: [
-        {
-            label: 'Verifikasi Berhasil',
-            data: [10, 15, 12, 20, 18, 25],
-            backgroundColor: 'rgba(16, 185, 129, 0.8)',
-        },
-        {
-            label: 'Verifikasi Gagal',
-            data: [2, 4, 3, 5, 4, 5],
-            backgroundColor: 'rgba(239, 68, 68, 0.8)',
-        },
-    ],
-};
-
-// Dummy data for recent certificates
-const recentCertificates = [
-    {
-        id: 'CERT001',
-        title: 'Sertifikat Pelatihan Web Development',
-        recipient: 'John Doe',
-        date: '2024-05-28',
-        status: 'Terverifikasi',
-    },
-    {
-        id: 'CERT002',
-        title: 'Sertifikat Akademik Semester 1',
-        recipient: 'Jane Smith',
-        date: '2024-05-27',
-        status: 'Menunggu',
-    },
-    {
-        id: 'CERT003',
-        title: 'Sertifikat Profesional UI/UX',
-        recipient: 'Mike Johnson',
-        date: '2024-05-26',
-        status: 'Terverifikasi',
-    },
-    {
-        id: 'CERT004',
-        title: 'Sertifikat Pelatihan Blockchain',
-        recipient: 'Sarah Wilson',
-        date: '2024-05-25',
-        status: 'Ditolak',
-    },
-];
+import { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { FiPlus, FiDownload, FiEye, FiCheckCircle, FiXCircle, FiFileText, FiUsers, FiCheckSquare } from 'react-icons/fi';
+import axios from 'axios';
+import { getEnv } from '../utils/env';
+import { toast } from 'react-toastify';
+import { useAuth } from '../context/AuthContext';
 
 const Dashboard = () => {
+    const [activeTab, setActiveTab] = useState('received');
+    const [issuedCertificates, setIssuedCertificates] = useState([]);
+    const [receivedCertificates, setReceivedCertificates] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [stats, setStats] = useState({
+        totalReceived: 0,
+        activeCertificates: 0
+    });
+    const { isIssuer, isVerifier } = useAuth();
+    const navigate = useNavigate();
+
+    useEffect(() => {
+        // Check if user is authorized to access dashboard
+        if (!isIssuer() && !isVerifier()) {
+            toast.error('Anda tidak memiliki akses ke halaman ini');
+            navigate('/login');
+            return;
+        }
+
+        fetchCertificates();
+    }, [activeTab, isIssuer, isVerifier, navigate]);
+
+    const fetchCertificates = async () => {
+        try {
+            setLoading(true);
+            const token = localStorage.getItem('token');
+            if (!token) {
+                toast.error('Silakan login terlebih dahulu');
+                return;
+            }
+
+            const endpoint = activeTab === 'issued'
+                ? `${getEnv('BASE_URL')}/api/certificate/by-issuer`
+                : `${getEnv('BASE_URL')}/api/certificate/by-target`;
+
+            const response = await axios.get(endpoint, {
+                headers: {
+                    Authorization: `Bearer ${token}`
+                }
+            });
+
+            if (response.data.success) {
+                if (activeTab === 'issued') {
+                    setIssuedCertificates(response.data.data);
+                    setStats(prev => ({
+                        ...prev,
+                        totalIssued: response.data.data.length,
+                        activeCertificates: response.data.data.filter(cert => cert.status === 'ACTIVE').length
+                    }));
+                } else {
+                    setReceivedCertificates(response.data.data);
+                    setStats(prev => ({
+                        ...prev,
+                        totalReceived: response.data.data.length,
+                        activeCertificates: response.data.data.filter(cert => cert.status === 'ACTIVE').length
+                    }));
+                }
+            }
+        } catch (error) {
+            console.error('Error fetching certificates:', error);
+            toast.error('Gagal mengambil data sertifikat');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const getStatusBadge = (status) => {
+        const statusConfig = {
+            ACTIVE: {
+                color: 'bg-green-500/10 text-green-400 border-green-500/20',
+                icon: <FiCheckCircle className="w-4 h-4" />
+            },
+            EXPIRED: {
+                color: 'bg-red-500/10 text-red-400 border-red-500/20',
+                icon: <FiXCircle className="w-4 h-4" />
+            }
+        };
+
+        const config = statusConfig[status] || statusConfig.ACTIVE;
+
+        return (
+            <div className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${config.color}`}>
+                {config.icon}
+                <span className="ml-1.5 capitalize">{status.toLowerCase()}</span>
+            </div>
+        );
+    };
+
+    const handleDownload = async (certificate) => {
+        try {
+            const response = await axios.get(certificate.filePath, {
+                responseType: 'blob'
+            });
+            const url = window.URL.createObjectURL(new Blob([response.data]));
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', `certificate-${certificate.id}.pdf`);
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+        } catch (error) {
+            console.error('Error downloading certificate:', error);
+            toast.error('Gagal mengunduh sertifikat');
+        }
+    };
+
+    const handleView = (certificate) => {
+        window.open(certificate.filePath, '_blank');
+    };
+
     return (
         <div className="animate-fade-in">
             <div className="max-w-7xl mx-auto p-6">
-                <h1 className="text-2xl font-bold mb-6 text-gradient">Dashboard</h1>
+                <div className="flex justify-between items-center mb-6">
+                    <h1 className="text-2xl font-bold text-gradient">Dashboard</h1>
+                    {isIssuer() && (
+                        <Link
+                            to="/issue-certificate"
+                            className="btn-primary inline-flex items-center"
+                        >
+                            <FiPlus className="w-5 h-5 mr-2" />
+                            Terbitkan Sertifikat
+                        </Link>
+                    )}
+                </div>
 
                 {/* Stats Cards */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
-                    <div className="card flex items-center space-x-4">
-                        <div className="p-3 bg-blue-500/10 rounded-lg">
-                            <DocumentCheckIcon className="w-6 h-6 text-blue-500" />
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+                    {isIssuer() && (
+                        <div className="card p-6">
+                            <div className="flex items-center">
+                                <div className="p-3 rounded-full bg-blue-500/10 text-blue-400">
+                                    <FiFileText className="w-6 h-6" />
+                                </div>
+                                <div className="ml-4">
+                                    <h2 className="text-sm font-medium text-gray-400">Total Sertifikat Diterbitkan</h2>
+                                    <p className="text-2xl font-semibold text-white">{stats.totalIssued || 0}</p>
+                                </div>
+                            </div>
                         </div>
-                        <div>
-                            <p className="text-sm text-gray-400">Total Sertifikat</p>
-                            <p className="text-2xl font-semibold text-gray-300">1,234</p>
-                        </div>
-                    </div>
-                    <div className="card flex items-center space-x-4">
-                        <div className="p-3 bg-green-500/10 rounded-lg">
-                            <CheckCircleIcon className="w-6 h-6 text-green-500" />
-                        </div>
-                        <div>
-                            <p className="text-sm text-gray-400">Terverifikasi</p>
-                            <p className="text-2xl font-semibold text-gray-300">1,100</p>
-                        </div>
-                    </div>
-                    <div className="card flex items-center space-x-4">
-                        <div className="p-3 bg-yellow-500/10 rounded-lg">
-                            <ClockIcon className="w-6 h-6 text-yellow-500" />
-                        </div>
-                        <div>
-                            <p className="text-sm text-gray-400">Menunggu</p>
-                            <p className="text-2xl font-semibold text-gray-300">89</p>
+                    )}
+                    <div className="card p-6">
+                        <div className="flex items-center">
+                            <div className="p-3 rounded-full bg-green-500/10 text-green-400">
+                                <FiCheckSquare className="w-6 h-6" />
+                            </div>
+                            <div className="ml-4">
+                                <h2 className="text-sm font-medium text-gray-400">Sertifikat Aktif</h2>
+                                <p className="text-2xl font-semibold text-white">{stats.activeCertificates || 0}</p>
+                            </div>
                         </div>
                     </div>
-                    <div className="card flex items-center space-x-4">
-                        <div className="p-3 bg-red-500/10 rounded-lg">
-                            <ExclamationTriangleIcon className="w-6 h-6 text-red-500" />
-                        </div>
-                        <div>
-                            <p className="text-sm text-gray-400">Ditolak</p>
-                            <p className="text-2xl font-semibold text-gray-300">45</p>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Charts */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-                    <div className="card">
-                        <h2 className="text-lg font-semibold text-gray-300 mb-4">Tren Sertifikat Bulanan</h2>
-                        <div className="h-80">
-                            <Line
-                                data={monthlyData}
-                                options={{
-                                    responsive: true,
-                                    maintainAspectRatio: false,
-                                    plugins: {
-                                        legend: {
-                                            position: 'top',
-                                            labels: {
-                                                color: '#9CA3AF',
-                                            },
-                                        },
-                                    },
-                                    scales: {
-                                        y: {
-                                            beginAtZero: true,
-                                            grid: {
-                                                color: 'rgba(75, 85, 99, 0.2)',
-                                            },
-                                            ticks: {
-                                                color: '#9CA3AF',
-                                            },
-                                        },
-                                        x: {
-                                            grid: {
-                                                color: 'rgba(75, 85, 99, 0.2)',
-                                            },
-                                            ticks: {
-                                                color: '#9CA3AF',
-                                            },
-                                        },
-                                    },
-                                }}
-                            />
-                        </div>
-                    </div>
-                    <div className="card">
-                        <h2 className="text-lg font-semibold text-gray-300 mb-4">Distribusi Kategori</h2>
-                        <div className="h-80">
-                            <Doughnut
-                                data={categoryData}
-                                options={{
-                                    responsive: true,
-                                    maintainAspectRatio: false,
-                                    plugins: {
-                                        legend: {
-                                            position: 'top',
-                                            labels: {
-                                                color: '#9CA3AF',
-                                            },
-                                        },
-                                    },
-                                }}
-                            />
+                    <div className="card p-6">
+                        <div className="flex items-center">
+                            <div className="p-3 rounded-full bg-purple-500/10 text-purple-400">
+                                <FiUsers className="w-6 h-6" />
+                            </div>
+                            <div className="ml-4">
+                                <h2 className="text-sm font-medium text-gray-400">Total Sertifikat Diterima</h2>
+                                <p className="text-2xl font-semibold text-white">{stats.totalReceived || 0}</p>
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                {/* Verification Chart */}
-                <div className="card mb-6">
-                    <h2 className="text-lg font-semibold text-gray-300 mb-4">Statistik Verifikasi</h2>
-                    <div className="h-80">
-                        <Bar
-                            data={verificationData}
-                            options={{
-                                responsive: true,
-                                maintainAspectRatio: false,
-                                plugins: {
-                                    legend: {
-                                        position: 'top',
-                                        labels: {
-                                            color: '#9CA3AF',
-                                        },
-                                    },
-                                },
-                                scales: {
-                                    y: {
-                                        beginAtZero: true,
-                                        grid: {
-                                            color: 'rgba(75, 85, 99, 0.2)',
-                                        },
-                                        ticks: {
-                                            color: '#9CA3AF',
-                                        },
-                                    },
-                                    x: {
-                                        grid: {
-                                            color: 'rgba(75, 85, 99, 0.2)',
-                                        },
-                                        ticks: {
-                                            color: '#9CA3AF',
-                                        },
-                                    },
-                                },
-                            }}
-                        />
+                {/* Tabs */}
+                <div className="mb-6">
+                    <div className="border-b border-gray-700/30">
+                        <nav className="-mb-px flex space-x-8">
+                            {isIssuer() && (
+                                <button
+                                    onClick={() => setActiveTab('issued')}
+                                    className={`${activeTab === 'issued'
+                                        ? 'border-blue-500 text-blue-400'
+                                        : 'border-transparent text-gray-400 hover:text-gray-300 hover:border-gray-300'
+                                        } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors`}
+                                >
+                                    Sertifikat yang Diterbitkan
+                                </button>
+                            )}
+                            <button
+                                onClick={() => setActiveTab('received')}
+                                className={`${activeTab === 'received'
+                                    ? 'border-blue-500 text-blue-400'
+                                    : 'border-transparent text-gray-400 hover:text-gray-300 hover:border-gray-300'
+                                    } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors`}
+                            >
+                                Sertifikat yang Diterima
+                            </button>
+                        </nav>
                     </div>
                 </div>
 
-                {/* Recent Certificates Table */}
-                <div className="card">
-                    <h2 className="text-lg font-semibold text-gray-300 mb-4">Sertifikat Terbaru</h2>
+                {/* Table */}
+                <div className="card overflow-hidden">
                     <div className="overflow-x-auto">
-                        <table className="w-full">
-                            <thead>
-                                <tr className="text-left border-b border-gray-700/30">
-                                    <th className="pb-3 text-sm font-medium text-gray-400">ID</th>
-                                    <th className="pb-3 text-sm font-medium text-gray-400">Judul</th>
-                                    <th className="pb-3 text-sm font-medium text-gray-400">Penerima</th>
-                                    <th className="pb-3 text-sm font-medium text-gray-400">Tanggal</th>
-                                    <th className="pb-3 text-sm font-medium text-gray-400">Status</th>
+                        <table className="min-w-full divide-y divide-gray-700/30">
+                            <thead className="bg-gray-800/50">
+                                <tr>
+                                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+                                        ID Sertifikat
+                                    </th>
+                                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+                                        {activeTab === 'issued' ? 'Penerima' : 'Penerbit'}
+                                    </th>
+                                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+                                        Judul
+                                    </th>
+                                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+                                        Tanggal Terbit
+                                    </th>
+                                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+                                        Tanggal Kedaluwarsa
+                                    </th>
+                                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+                                        Status
+                                    </th>
+                                    <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-400 uppercase tracking-wider">
+                                        Aksi
+                                    </th>
                                 </tr>
                             </thead>
-                            <tbody>
-                                {recentCertificates.map((cert) => (
-                                    <tr key={cert.id} className="border-b border-gray-700/30 last:border-0">
-                                        <td className="py-3 text-sm text-gray-300 font-mono">{cert.id}</td>
-                                        <td className="py-3 text-sm text-gray-300">{cert.title}</td>
-                                        <td className="py-3 text-sm text-gray-300">{cert.recipient}</td>
-                                        <td className="py-3 text-sm text-gray-300">{cert.date}</td>
-                                        <td className="py-3 text-sm">
-                                            <span
-                                                className={`px-2 py-1 rounded-full text-xs font-medium ${cert.status === 'Terverifikasi'
-                                                        ? 'bg-green-500/10 text-green-400'
-                                                        : cert.status === 'Menunggu'
-                                                            ? 'bg-yellow-500/10 text-yellow-400'
-                                                            : 'bg-red-500/10 text-red-400'
-                                                    }`}
-                                            >
-                                                {cert.status}
-                                            </span>
+                            <tbody className="divide-y divide-gray-700/30">
+                                {loading ? (
+                                    <tr>
+                                        <td colSpan="7" className="px-6 py-4 text-center text-gray-400">
+                                            Memuat data...
                                         </td>
                                     </tr>
-                                ))}
+                                ) : (activeTab === 'issued' ? issuedCertificates : receivedCertificates).length === 0 ? (
+                                    <tr>
+                                        <td colSpan="7" className="px-6 py-4 text-center text-gray-400">
+                                            Tidak ada sertifikat
+                                        </td>
+                                    </tr>
+                                ) : (
+                                    (activeTab === 'issued' ? issuedCertificates : receivedCertificates).map((cert) => (
+                                        <tr key={cert.id} className="hover:bg-gray-800/30 transition-colors">
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-300">
+                                                {cert.id.substring(0, 10)}...
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
+                                                {activeTab === 'issued' ? cert.recipientName : cert.issuerName}
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
+                                                {cert.certificateTitle}
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
+                                                {new Date(cert.issueDate).toLocaleDateString('id-ID')}
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
+                                                {cert.expiryDate ? new Date(cert.expiryDate).toLocaleDateString('id-ID') : '-'}
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                {getStatusBadge(cert.status)}
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                                <div className="flex justify-end space-x-2">
+                                                    <button
+                                                        onClick={() => handleView(cert)}
+                                                        className="text-gray-400 hover:text-gray-300 transition-colors"
+                                                    >
+                                                        <FiEye className="w-5 h-5" />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleDownload(cert)}
+                                                        className="text-gray-400 hover:text-gray-300 transition-colors"
+                                                    >
+                                                        <FiDownload className="w-5 h-5" />
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ))
+                                )}
                             </tbody>
                         </table>
                     </div>

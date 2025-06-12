@@ -12,6 +12,7 @@ model User {
   name          String?     // Nullable
   email         String?     @unique // Nullable, tapi unik jika diisi
   password      String?     // Nullable
+  role          String      @default("verifier") // Role: "issuer" atau "verifier"
   createdAt     DateTime?   // Nullable, tanpa default
   templates     Template[]  // Relasi ke Template
   issuedCertificates Certificate[] @relation("CertificateIssuer") // Sertifikat yang diterbitkan
@@ -19,7 +20,7 @@ model User {
 }
 
 model Template {
-  id         Int       @id @default(autoincrement())
+  id         String    @id @default(uuid())
   userId     String    @db.VarChar(255)
   user       User      @relation(fields: [userId], references: [walletAddress]) // Relasi ke User
   name       String    @db.VarChar(255) 
@@ -33,9 +34,8 @@ model Template {
 }
 
 model Certificate {
-  id               Int       @id @default(autoincrement())
-  certificateNumber String    @unique @db.VarChar(50)
-  templateId       Int       
+  id               String    @id @default(uuid())
+  templateId       String    
   template         Template  @relation(fields: [templateId], references: [id])
   recipientName    String    @db.VarChar(100)
   certificateTitle String    @db.VarChar(200)
@@ -43,12 +43,8 @@ model Certificate {
   expiryDate       DateTime? 
   description      String?   @db.Text
   issuerName       String    @db.VarChar(100)
-  signaturePath    String?   @db.VarChar(255)
-  category         String?   @db.VarChar(50)
   targetAddress    String    @db.VarChar(42)
   issuerAddress    String    @db.VarChar(42)
-  hash             String?   @db.VarChar(64)
-  qrCodeUrl        String?   @db.VarChar(255)
   filePath         String    @db.VarChar(255)
   ipfsCid          String    @db.VarChar(255)  // Menyimpan CID dari IPFS
   status           String    @db.VarChar(20)   // Status sertifikat (active, revoked, expired)
