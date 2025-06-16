@@ -12,6 +12,7 @@ const fss = require('fs/promises');
 const { prisma } = require('../config');
 const { decodeToken } = require('../utils/jwt');
 const { deleteTemplate } = require('../services/certificate-service');
+const PinataStorageClient = require('../config/storage');
 
 const create = async (req, res) => {
   // HTML template sertifikat dengan styling menggunakan CSS inline
@@ -162,9 +163,6 @@ const issueCertificate = async (req, res) => {
       targetAddress
     });
 
-    const web3Client = Web3StorageClient.getInstance();
-    await web3Client.initialize();
-
     const filePath = path.join(__dirname, '..', 'certificates', result.filePath);
 
     if (!fsSync.existsSync(filePath)) {
@@ -175,10 +173,9 @@ const issueCertificate = async (req, res) => {
 
     const fileContent = await fs.readFile(filePath);
     const fileName = path.basename(filePath);
-    const file = new File([fileContent], fileName, { type: 'application/pdf' });
 
     // Use uploadLargeFile for better performance with large files
-    const cid = await web3Client.uploadLargeFile(file);
+    const cid = await storageClient.uploadLargeFile(fileContent, fileName, 'application/pdf');
     console.log('📤 File uploaded to IPFS with CID:', cid);
 
     // Get user data from token
@@ -190,16 +187,16 @@ const issueCertificate = async (req, res) => {
     // Save certificate data to database
     const certificate = await prisma.certificate.create({
       data: {
-        id: certificateId, // Use keccak256 hash as ID
+        id: certificateId,
         templateId: templateId,
         recipientName,
-        certificateTitle: template.name, // Use template name as certificate title
+        certificateTitle: template.name,
         issueDate: new Date(issueDate),
         expiryDate: expiryDate ? new Date(expiryDate) : null,
-        issuerName: userData.name || userData.walletAddress, // Use name if available, fallback to wallet address
+        issuerName: userData.name || userData.walletAddress,
         targetAddress,
         issuerAddress: userData.walletAddress,
-        filePath: `https://${cid}.ipfs.w3s.link/${fileName}`,
+        filePath: `https://gateway.pinata.cloud/ipfs/${cid}`,
         ipfsCid: cid,
         status: 'ACTIVE'
       }
@@ -211,7 +208,7 @@ const issueCertificate = async (req, res) => {
       error: {},
       data: {
         ...certificate,
-        fileCid: `https://${cid}.ipfs.w3s.link/${fileName}`,
+        fileCid: `https://gateway.pinata.cloud/ipfs/${cid}`,
       },
     });
 
@@ -255,6 +252,20 @@ async function verifyCertificate(req, res) {
   }
 }
 
+const storageClient = PinataStorageClient.getInstance();
+
+// Update the uploadFile function to use Pinata
+const uploadFile = async (fileBuffer, fileName, mimeType) => {
+  try {
+    await storageClient.initialize();
+    const cid = await storageClient.uploadFile(fileBuffer, fileName, mimeType);
+    return storageClient.getFileUrl(cid);
+  } catch (error) {
+    console.error('Error uploading file:', error);
+    throw error;
+  }
+};
+
 async function uploadTemplateHandler(req, res) {
   try {
     const userData = decodeToken(req.headers.authorization);
@@ -267,8 +278,8 @@ async function uploadTemplateHandler(req, res) {
       throw new Error('No file uploaded');
     }
 
-    const web3Client = Web3StorageClient.getInstance();
-    await web3Client.initialize();
+    const storageClient = PinataStorageClient.getInstance();
+    await storageClient.initialize();
 
     const uploadDir = path.join(__dirname, '..', 'certificates', 'templates');
     await fss.mkdir(uploadDir, { recursive: true });
@@ -280,10 +291,9 @@ async function uploadTemplateHandler(req, res) {
     console.log('File saved to:', filePath);
 
     const fileContent = await fss.readFile(filePath);
-    const file = new File([fileContent], fileName, { type: req.file.mimetype });
 
     // Use uploadLargeFile for better performance with large files
-    const cid = await web3Client.uploadLargeFile(file);
+    const cid = await storageClient.uploadLargeFile(fileContent, fileName, req.file.mimetype);
     console.log('📤 Template uploaded to IPFS with CID:', cid);
 
     await fss.unlink(filePath);
@@ -295,7 +305,7 @@ async function uploadTemplateHandler(req, res) {
             connect: { walletAddress: userData.walletAddress },
           },
           name: req.body.templateName,
-          filePath: `https://${cid}.ipfs.w3s.link/${fileName}`,
+          filePath: `https://gateway.pinata.cloud/ipfs/${cid}`,
           nameX: parseFloat(req.body.positionX),
           nameY: parseFloat(req.body.positionY),
         },
@@ -307,7 +317,7 @@ async function uploadTemplateHandler(req, res) {
       message: 'Template uploaded successfully',
       error: {},
       data: {
-        cid: `https://${cid}.ipfs.w3s.link/${fileName}`,
+        cid: `https://gateway.pinata.cloud/ipfs/${cid}`,
       },
     });
   } catch (err) {

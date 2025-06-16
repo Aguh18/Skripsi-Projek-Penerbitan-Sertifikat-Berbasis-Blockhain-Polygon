@@ -1,24 +1,25 @@
-const Client = require('@web3-storage/w3up-client');
+const pinataSDK = require('@pinata/sdk');
 const { Readable } = require('stream');
+const FormData = require('form-data');
 
-class Web3StorageClient {
+class PinataStorageClient {
     static #instance = null;
-    #client = null;
+    #pinata = null;
     #initialized = false;
     #retryAttempts = 3;
     #retryDelay = 1000; // 1 second
 
     constructor() {
-        if (Web3StorageClient.#instance) {
-            throw new Error("Use Web3StorageClient.getInstance() to get the singleton instance");
+        if (PinataStorageClient.#instance) {
+            throw new Error("Use PinataStorageClient.getInstance() to get the singleton instance");
         }
     }
 
     static getInstance() {
-        if (!Web3StorageClient.#instance) {
-            Web3StorageClient.#instance = new Web3StorageClient();
+        if (!PinataStorageClient.#instance) {
+            PinataStorageClient.#instance = new PinataStorageClient();
         }
-        return Web3StorageClient.#instance;
+        return PinataStorageClient.#instance;
     }
 
     async initialize() {
@@ -27,44 +28,53 @@ class Web3StorageClient {
         }
 
         try {
-            this.#client = await Client.create();
-            const account = await this.#client.login('teguh180902@gmail.com');
-            await this.#client.capability.access.claim();
-            await this.#client.setCurrentSpace("did:key:z6MkoK22dFM6G2gww3zD9pncgLpJ9SgtZbGjR1zFkrshehKA");
+            const apiKey = process.env.PINATA_API_KEY;
+            const apiSecret = process.env.PINATA_API_SECRET;
+
+            if (!apiKey || !apiSecret) {
+                throw new Error('Pinata API credentials not found in environment variables');
+            }
+
+            this.#pinata = new pinataSDK(apiKey, apiSecret);
+
+            // Test connection
+            const test = await this.#pinata.testAuthentication();
+            if (!test.authenticated) {
+                throw new Error('Failed to authenticate with Pinata');
+            }
+
             this.#initialized = true;
-            console.log('✅ Web3.Storage client initialized');
+            console.log('✅ Pinata client initialized');
         } catch (error) {
-            console.error('Failed to initialize Web3.Storage client:', error);
+            console.error('Failed to initialize Pinata client:', error);
             throw error;
         }
     }
 
-    async uploadFile(file) {
-        if (!this.#client || !this.#initialized) {
+    async uploadFile(fileBuffer, fileName, mimeType) {
+        if (!this.#pinata || !this.#initialized) {
             throw new Error("Client not initialized. Call initialize() first.");
         }
-        if (!(file instanceof File)) {
-            throw new Error("Invalid file object provided");
-        }
 
-        console.log('Uploading file:', file.name);
-
-        // Convert file to stream for chunked upload
-        const fileStream = Readable.from(file.stream());
+        console.log('Uploading file:', fileName);
 
         let attempt = 0;
         while (attempt < this.#retryAttempts) {
             try {
-                const root = await this.#client.uploadDirectory([file], {
-                    onRootCidReady: (cid) => {
-                        console.log('Upload started, CID:', cid);
-                    },
-                    onStoredChunk: (size) => {
-                        console.log(`Stored chunk of ${size} bytes`);
-                    }
-                });
+                // Create a readable stream from the buffer
+                const stream = Readable.from(fileBuffer);
 
-                const cid = root.toString();
+                const options = {
+                    pinataMetadata: {
+                        name: fileName,
+                    },
+                    pinataOptions: {
+                        cidVersion: 0
+                    }
+                };
+
+                const result = await this.#pinata.pinFileToIPFS(stream, options);
+                const cid = result.IpfsHash;
                 console.log('File uploaded successfully with CID:', cid);
                 return cid;
             } catch (error) {
@@ -81,32 +91,28 @@ class Web3StorageClient {
         }
     }
 
-    async uploadLargeFile(file, chunkSize = 1024 * 1024) { // 1MB chunks
-        if (!this.#client || !this.#initialized) {
+    async uploadLargeFile(fileBuffer, fileName, mimeType) {
+        if (!this.#pinata || !this.#initialized) {
             throw new Error("Client not initialized. Call initialize() first.");
         }
-        if (!(file instanceof File)) {
-            throw new Error("Invalid file object provided");
-        }
 
-        console.log('Uploading large file:', file.name);
-
-        const totalChunks = Math.ceil(file.size / chunkSize);
-        let uploadedChunks = 0;
+        console.log('Uploading large file:', fileName);
 
         try {
-            const root = await this.#client.uploadDirectory([file], {
-                onRootCidReady: (cid) => {
-                    console.log('Upload started, CID:', cid);
-                },
-                onStoredChunk: (size) => {
-                    uploadedChunks++;
-                    const progress = (uploadedChunks / totalChunks) * 100;
-                    console.log(`Upload progress: ${progress.toFixed(2)}%`);
-                }
-            });
+            // Create a readable stream from the buffer
+            const stream = Readable.from(fileBuffer);
 
-            const cid = root.toString();
+            const options = {
+                pinataMetadata: {
+                    name: fileName,
+                },
+                pinataOptions: {
+                    cidVersion: 0
+                }
+            };
+
+            const result = await this.#pinata.pinFileToIPFS(stream, options);
+            const cid = result.IpfsHash;
             console.log('Large file uploaded successfully with CID:', cid);
             return cid;
         } catch (error) {
@@ -114,6 +120,10 @@ class Web3StorageClient {
             throw error;
         }
     }
+
+    async getFileUrl(cid) {
+        return `https://gateway.pinata.cloud/ipfs/${cid}`;
+    }
 }
 
-module.exports = Web3StorageClient;
+module.exports = PinataStorageClient;
