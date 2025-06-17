@@ -1,6 +1,6 @@
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useState, useEffect } from 'react';
-import { BrowserProvider, Contract, isAddress, keccak256 } from 'ethers';
+import { BrowserProvider, Contract, isAddress, keccak256, parseUnits } from 'ethers';
 import contractABI from '../ABI.json';
 import { toast } from 'react-toastify';
 import { NETWORKS, CONTRACTS, DEFAULT_NETWORK, APP_CONFIG } from '../config/network';
@@ -17,14 +17,42 @@ const Submit = () => {
     const [transactionStatus, setTransactionStatus] = useState('');
     const [error, setError] = useState('');
     const [fileHash, setFileHash] = useState('-');
+    const [isMetaMaskConnected, setIsMetaMaskConnected] = useState(false);
 
     const state = location.state;
+
+    // Helper: Auto switch or add network
+    const switchOrAddNetwork = async () => {
+        const { chainId, chainName, rpcUrls, nativeCurrency, blockExplorerUrls } = networkConfig;
+        try {
+            await window.ethereum.request({
+                method: 'wallet_switchEthereumChain',
+                params: [{ chainId }],
+            });
+        } catch (switchError) {
+            if (switchError.code === 4902) {
+                // Chain belum ada di MetaMask, tambahkan
+                await window.ethereum.request({
+                    method: 'wallet_addEthereumChain',
+                    params: [{
+                        chainId,
+                        chainName,
+                        rpcUrls,
+                        nativeCurrency,
+                        blockExplorerUrls,
+                    }],
+                });
+            } else {
+                throw switchError;
+            }
+        }
+    };
 
     // Initialize ethers.js with MetaMask
     useEffect(() => {
         const initEthers = async () => {
             if (!window.ethereum) {
-                toast.error('MetaMask not detected. Please install MetaMask.');
+                toast.error('MetaMask tidak terdeteksi. Silakan install MetaMask.');
                 return;
             }
 
@@ -32,65 +60,68 @@ const Submit = () => {
                 // Request account access first
                 const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
                 if (!accounts || accounts.length === 0) {
-                    throw new Error('No accounts found');
+                    throw new Error('Tidak ada akun yang ditemukan');
                 }
 
                 // Get current chain ID
-                const currentChainId = await window.ethereum.request({ method: 'eth_chainId' });
-                console.log('Current chain ID:', currentChainId);
-                console.log('Target chain ID:', networkConfig.chainId);
-
-                // Switch network if needed
+                let currentChainId = await window.ethereum.request({ method: 'eth_chainId' });
                 if (currentChainId !== networkConfig.chainId) {
-                    try {
-                        await window.ethereum.request({
-                            method: 'wallet_switchEthereumChain',
-                            params: [{ chainId: networkConfig.chainId }],
-                        });
-                    } catch (switchError) {
-                        if (switchError.code === 4902) {
-                            try {
-                                await window.ethereum.request({
-                                    method: 'wallet_addEthereumChain',
-                                    params: [networkConfig],
-                                });
-                            } catch (addError) {
-                                toast.error('Failed to add Hardhat network to MetaMask');
-                                return;
-                            }
-                        } else {
-                            toast.error('Failed to switch to Hardhat network');
-                            return;
-                        }
-                    }
+                    // Auto switch/add network
+                    await switchOrAddNetwork();
+                    // Ambil ulang chainId setelah switch
+                    currentChainId = await window.ethereum.request({ method: 'eth_chainId' });
+                }
+
+                // Verify network connection
+                const provider = new BrowserProvider(window.ethereum);
+                const network = await provider.getNetwork();
+                const targetChainId = parseInt(networkConfig.chainId, 16);
+                if (network.chainId !== targetChainId) {
+                    toast.error('Terhubung ke jaringan yang salah. Silakan beralih ke jaringan Hardhat.');
+                    return;
                 }
 
                 // Create provider and signer
-                const web3Provider = new BrowserProvider(window.ethereum);
-                const signer = await web3Provider.getSigner();
+                const signer = await provider.getSigner();
                 const contractInstance = new Contract(contractAddress, contractABI, signer);
 
-                setProvider(web3Provider);
+                setProvider(provider);
                 setSigner(signer);
                 setContract(contractInstance);
+                setIsMetaMaskConnected(true);
 
                 // Listen for account changes
                 window.ethereum.on('accountsChanged', (accounts) => {
                     if (accounts.length === 0) {
-                        toast.error('Please connect your MetaMask wallet');
+                        setIsMetaMaskConnected(false);
+                        toast.error('Silakan hubungkan wallet MetaMask Anda');
+                    } else {
+                        setIsMetaMaskConnected(true);
                     }
                 });
 
                 // Listen for chain changes
-                window.ethereum.on('chainChanged', (chainId) => {
+                window.ethereum.on('chainChanged', async (chainId) => {
                     if (chainId !== networkConfig.chainId) {
-                        toast.error('Please switch to Hardhat network');
+                        setIsMetaMaskConnected(false);
+                        toast.error('Silakan beralih ke jaringan Hardhat');
+                        // Auto switch/add network jika user ganti chain
+                        await switchOrAddNetwork();
+                    } else {
+                        setIsMetaMaskConnected(true);
+                        // Reinitialize contract with new chain
+                        const newProvider = new BrowserProvider(window.ethereum);
+                        const newSigner = await newProvider.getSigner();
+                        const newContract = new Contract(contractAddress, contractABI, newSigner);
+                        setContract(newContract);
+                        setSigner(newSigner);
                     }
                 });
 
             } catch (err) {
                 console.error('Error initializing ethers:', err);
-                toast.error(`Failed to connect to MetaMask: ${err.message}`);
+                toast.error(`Gagal terhubung ke MetaMask: ${err.message}`);
+                setIsMetaMaskConnected(false);
             }
         };
 
@@ -150,6 +181,29 @@ const Submit = () => {
     };
 
     const handleIssueCertificate = async () => {
+        if (!window.ethereum) {
+            toast.error('MetaMask tidak terdeteksi. Silakan install MetaMask.');
+            return;
+        }
+
+        if (!isMetaMaskConnected) {
+            try {
+                const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+                if (accounts.length > 0) {
+                    setIsMetaMaskConnected(true);
+                    // Reinitialize contract with new signer
+                    const web3Provider = new BrowserProvider(window.ethereum);
+                    const signer = await web3Provider.getSigner();
+                    const contractInstance = new Contract(contractAddress, contractABI, signer);
+                    setContract(contractInstance);
+                    setSigner(signer);
+                }
+            } catch (err) {
+                toast.error('Gagal terhubung ke MetaMask');
+                return;
+            }
+        }
+
         if (!contract || !signer) {
             toast.error('Contract atau signer belum diinisialisasi. Pastikan MetaMask terhubung.');
             return;
@@ -264,10 +318,17 @@ const Submit = () => {
     };
 
     return (
-        <div className="animate-fade-in">
-            <div className="max-w-6xl mx-auto p-6">
-                <h1 className="text-2xl font-bold mb-6 text-gradient">Detail Sertifikat</h1>
-
+        <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 overflow-hidden relative animate-fade-in">
+            {/* Space Background Effects */}
+            <div className="fixed inset-0 pointer-events-none z-0">
+                {/* Stars */}
+                <div className="absolute inset-0 bg-[radial-gradient(white,rgba(255,255,255,.2)_2px,transparent_40px)] bg-[length:50px_50px] opacity-20"></div>
+                {/* Nebula Effects */}
+                <div className="absolute top-1/4 left-1/4 w-[500px] h-[500px] bg-gradient-to-r from-blue-500/20 via-purple-500/20 to-pink-500/20 rounded-full blur-3xl mix-blend-screen"></div>
+                <div className="absolute bottom-1/3 right-1/3 w-[600px] h-[600px] bg-gradient-to-r from-cyan-500/20 via-blue-500/20 to-purple-500/20 rounded-full blur-3xl mix-blend-screen"></div>
+            </div>
+            <div className="max-w-6xl mx-auto p-6 relative z-10">
+                <h1 className="text-3xl font-bold mb-8 text-gradient bg-clip-text text-transparent bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400">Detail Sertifikat</h1>
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     {/* Certificate Data Section */}
                     <div className="card space-y-6">
@@ -329,10 +390,12 @@ const Submit = () => {
                         <div className="pt-4 border-t border-gray-700/30">
                             <button
                                 onClick={handleIssueCertificate}
-                                disabled={!contract || transactionStatus === 'Processing...'}
-                                className="w-full btn-primary relative"
+                                disabled={!isMetaMaskConnected || transactionStatus === 'Processing...'}
+                                className={`w-full btn-primary relative ${!isMetaMaskConnected ? 'opacity-50 cursor-not-allowed' : ''}`}
                             >
-                                {transactionStatus === 'Processing...' ? (
+                                {!isMetaMaskConnected ? (
+                                    'Hubungkan MetaMask'
+                                ) : transactionStatus === 'Processing...' ? (
                                     <>
                                         <span className="opacity-0">Terbitkan ke Blockchain</span>
                                         <div className="absolute inset-0 flex items-center justify-center">

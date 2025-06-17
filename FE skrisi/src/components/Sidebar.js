@@ -12,12 +12,16 @@ function Sidebar({ isCollapsed, onToggle }) {
     };
 
     return (
-        <aside className={`${isCollapsed ? 'w-20' : 'w-64'} transition-all duration-300 h-full bg-gray-900/50 backdrop-blur-sm border-r border-gray-800/50 py-6`}>
-            <div className={`px-4 space-y-1 ${isCollapsed ? 'px-2' : ''}`}>
+        <aside className={`${isCollapsed ? 'w-20' : 'w-64'} transition-all duration-300 h-full bg-gray-900/60 backdrop-blur-xl border-r border-blue-500/20 shadow-xl relative z-20`}>
+            {/* Gradient/blur overlay */}
+            <div className="absolute inset-0 pointer-events-none">
+                <div className="w-full h-full bg-gradient-to-br from-blue-500/10 via-purple-500/10 to-pink-500/10 rounded-2xl blur-2xl"></div>
+            </div>
+            <div className={`px-4 space-y-3 py-4 ${isCollapsed ? 'px-2' : ''} relative z-10`}>
                 <div className="flex justify-end mb-2">
                     <button
                         onClick={onToggle}
-                        className="bg-gray-800 rounded-full p-1 hover:bg-gray-700 transition-colors"
+                        className="bg-gray-800/70 rounded-full p-1 hover:bg-blue-700/40 transition-colors border border-blue-500/20 shadow"
                     >
                         <svg
                             className={`w-4 h-4 text-gray-400 transform transition-transform ${isCollapsed ? 'rotate-180' : ''}`}
@@ -30,7 +34,7 @@ function Sidebar({ isCollapsed, onToggle }) {
                     </button>
                 </div>
                 <div className={`${isCollapsed ? 'px-2' : 'px-4'} mb-6`}>
-                    <div className="h-px bg-gradient-to-r from-transparent via-gray-700 to-transparent"></div>
+                    <div className="h-px bg-gradient-to-r from-transparent via-blue-700 to-transparent"></div>
                 </div>
 
                 {/* Menu untuk semua user */}
@@ -49,8 +53,8 @@ function Sidebar({ isCollapsed, onToggle }) {
                     props={{
                         text: 'Sertifikat',
                         icon: 'certificate',
-                        link: '/certificates',
-                        isActive: isActive('/certificates'),
+                        link: '/dashboard/certificates',
+                        isActive: isActive('/dashboard/certificates'),
                         isCollapsed
                     }}
                 />
@@ -61,8 +65,8 @@ function Sidebar({ isCollapsed, onToggle }) {
                         props={{
                             text: 'Template',
                             icon: 'upload',
-                            link: '/template',
-                            isActive: isActive('/template'),
+                            link: '/dashboard/template',
+                            isActive: isActive('/dashboard/template'),
                             isCollapsed
                         }}
                     />
@@ -74,8 +78,8 @@ function Sidebar({ isCollapsed, onToggle }) {
                         props={{
                             text: 'Verifikasi Sertifikat',
                             icon: 'check-circle',
-                            link: '/verify-certificate',
-                            isActive: isActive('/verify-certificate'),
+                            link: '/dashboard/verify-certificate',
+                            isActive: isActive('/dashboard/verify-certificate'),
                             isCollapsed
                         }}
                     />
@@ -86,14 +90,14 @@ function Sidebar({ isCollapsed, onToggle }) {
                     props={{
                         text: 'Pengaturan',
                         icon: 'gear',
-                        link: '/settings',
-                        isActive: isActive('/settings'),
+                        link: '/dashboard/settings',
+                        isActive: isActive('/dashboard/settings'),
                         isCollapsed
                     }}
                 />
 
                 <div className={`${isCollapsed ? 'px-2' : 'px-4'} mt-6`}>
-                    <div className="h-px bg-gradient-to-r from-transparent via-gray-700 to-transparent"></div>
+                    <div className="h-px bg-gradient-to-r from-transparent via-blue-700 to-transparent"></div>
                 </div>
             </div>
         </aside>

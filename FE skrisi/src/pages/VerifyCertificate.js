@@ -174,10 +174,17 @@ const VerifyCertificate = () => {
   };
 
   return (
-    <div className="animate-fade-in">
-      <div className="max-w-6xl mx-auto p-6">
-        <h1 className="text-2xl font-bold mb-6 text-gradient">Verifikasi Sertifikat</h1>
-
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 overflow-hidden relative animate-fade-in">
+      {/* Space Background Effects */}
+      <div className="fixed inset-0 pointer-events-none z-0">
+        {/* Stars */}
+        <div className="absolute inset-0 bg-[radial-gradient(white,rgba(255,255,255,.2)_2px,transparent_40px)] bg-[length:50px_50px] opacity-20"></div>
+        {/* Nebula Effects */}
+        <div className="absolute top-1/4 left-1/4 w-[500px] h-[500px] bg-gradient-to-r from-blue-500/20 via-purple-500/20 to-pink-500/20 rounded-full blur-3xl mix-blend-screen"></div>
+        <div className="absolute bottom-1/3 right-1/3 w-[600px] h-[600px] bg-gradient-to-r from-cyan-500/20 via-blue-500/20 to-purple-500/20 rounded-full blur-3xl mix-blend-screen"></div>
+      </div>
+      <div className="max-w-6xl mx-auto p-6 relative z-10">
+        <h1 className="text-3xl font-bold mb-8 text-gradient bg-clip-text text-transparent bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400">Verifikasi Sertifikat</h1>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Verification Form Section */}
           <div className="card space-y-6">

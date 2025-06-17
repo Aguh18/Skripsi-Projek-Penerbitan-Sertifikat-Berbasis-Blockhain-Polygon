@@ -20,7 +20,7 @@ const IssueCertificate = () => {
         template: '',
         recipientName: '',
         issueDate: new Date().toISOString().split('T')[0],
-        expiryDate: '', // Optional expiry date
+        expiryDate: '',
         targetAddress: '',
         issuerAddress: localStorage.getItem("walletAddress"),
         issuerName: localStorage.getItem("walletAddress"),
@@ -33,13 +33,11 @@ const IssueCertificate = () => {
     const { isIssuer } = useAuth();
 
     useEffect(() => {
-        // Check if user is authorized to issue certificates
         if (!isIssuer()) {
             toast.error('Anda tidak memiliki akses untuk menerbitkan sertifikat');
             navigate('/dashboard');
             return;
         }
-
         const fetchTemplates = async () => {
             try {
                 const token = localStorage.getItem('token');
@@ -48,7 +46,6 @@ const IssueCertificate = () => {
                     navigate('/login');
                     return;
                 }
-
                 const response = await axios.get(
                     `${getEnv('BASE_URL')}/api/certificate/template`,
                     {
@@ -58,7 +55,6 @@ const IssueCertificate = () => {
                         },
                     }
                 );
-
                 if (response.data.success && response.data.data.templates) {
                     setTemplateName(response.data.data.templates);
                 } else {
@@ -76,7 +72,6 @@ const IssueCertificate = () => {
                 setLoading(false);
             }
         };
-
         fetchTemplates();
     }, [navigate, isIssuer]);
 
@@ -95,12 +90,9 @@ const IssueCertificate = () => {
         if (!formData.targetAddress) newErrors.targetAddress = 'Alamat target wajib diisi';
         else if (!/^0x[a-fA-F0-9]{40}$/.test(formData.targetAddress))
             newErrors.targetAddress = 'Alamat target tidak valid';
-
-        // Validate expiry date if provided
         if (formData.expiryDate && formData.expiryDate < formData.issueDate) {
             newErrors.expiryDate = 'Tanggal kadaluarsa harus lebih baru dari tanggal penerbitan';
         }
-
         return newErrors;
     };
 
@@ -111,25 +103,22 @@ const IssueCertificate = () => {
             setErrors(validationErrors);
             return;
         }
-
         setIsSubmitting(true);
         try {
-            // Ambil issuerName dari localStorage userProfile
             let issuerName = '-';
             try {
                 const userProfile = JSON.parse(localStorage.getItem('userProfile') || '{}');
                 issuerName = userProfile.name || '-';
             } catch { }
-
             const response = await axios.post(
                 `${getEnv('BASE_URL')}/api/certificate/generate-from-template`,
                 {
                     templateId: formData.template,
                     recipientName: formData.recipientName,
                     issueDate: formData.issueDate,
-                    expiryDate: formData.expiryDate || null, // Send null if not provided
+                    expiryDate: formData.expiryDate || null,
                     targetAddress: formData.targetAddress,
-                    issuerName, // Kirim issuerName ke backend
+                    issuerName,
                 },
                 {
                     headers: {
@@ -137,7 +126,6 @@ const IssueCertificate = () => {
                     },
                 }
             );
-
             if (response.status === 201) {
                 toast.success('Sertifikat berhasil dibuat!', {
                     position: "top-center",
@@ -149,9 +137,8 @@ const IssueCertificate = () => {
                     progress: undefined,
                     theme: "dark",
                 });
-
                 setTimeout(() => {
-                    navigate('/issue-certificate/submit', {
+                    navigate('/dashboard/issue-certificate/submit', {
                         state: {
                             data: response.data.data,
                         },
@@ -180,18 +167,26 @@ const IssueCertificate = () => {
         );
     }
 
+    // THEME: Space/Nebula background, glassmorphism card, modern gradient, consistent button/input style
     return (
-        <div className="animate-fade-in">
+        <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 overflow-hidden relative animate-fade-in">
+            {/* Space Background Effects */}
+            <div className="fixed inset-0 pointer-events-none z-0">
+                {/* Stars */}
+                <div className="absolute inset-0 bg-[radial-gradient(white,rgba(255,255,255,.2)_2px,transparent_40px)] bg-[length:50px_50px] opacity-20"></div>
+                {/* Nebula Effects */}
+                <div className="absolute top-1/4 left-1/4 w-[500px] h-[500px] bg-gradient-to-r from-blue-500/20 via-purple-500/20 to-pink-500/20 rounded-full blur-3xl mix-blend-screen"></div>
+                <div className="absolute bottom-1/3 right-1/3 w-[600px] h-[600px] bg-gradient-to-r from-cyan-500/20 via-blue-500/20 to-purple-500/20 rounded-full blur-3xl mix-blend-screen"></div>
+            </div>
             {isSubmitting && <LoadingOverlay />}
-            <div className="max-w-4xl mx-auto">
-                <h2 className="text-2xl font-bold mb-6 text-gradient">Terbitkan Sertifikat</h2>
-                <form onSubmit={handleSubmit} className="card space-y-6">
+            <div className="max-w-4xl mx-auto py-16 relative z-10">
+                <h2 className="text-3xl font-bold mb-8 text-center bg-clip-text text-transparent bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400">Terbitkan Sertifikat</h2>
+                <form onSubmit={handleSubmit} className="card space-y-6 bg-gray-800/30 backdrop-blur-sm border border-gray-700/30 rounded-2xl p-8 shadow-xl hover:border-blue-500/50 transition-all duration-300">
                     {errors.submit && (
                         <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400">
                             {errors.submit}
                         </div>
                     )}
-
                     <div className="space-y-4">
                         <div>
                             <label className="block text-sm font-medium text-gray-300 mb-2">Template Sertifikat</label>
@@ -211,7 +206,6 @@ const IssueCertificate = () => {
                             </select>
                             {errors.template && <p className="text-red-400 text-sm mt-1">{errors.template}</p>}
                         </div>
-
                         <div>
                             <label className="block text-sm font-medium text-gray-300 mb-2">Nama Penerima</label>
                             <input
@@ -226,7 +220,6 @@ const IssueCertificate = () => {
                                 <p className="text-red-400 text-sm mt-1">{errors.recipientName}</p>
                             )}
                         </div>
-
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
                                 <label className="block text-sm font-medium text-gray-300 mb-2">Tanggal Penerbitan</label>
@@ -242,7 +235,6 @@ const IssueCertificate = () => {
                                     <p className="text-red-400 text-sm mt-1">{errors.issueDate}</p>
                                 )}
                             </div>
-
                             <div>
                                 <label className="block text-sm font-medium text-gray-300 mb-2">
                                     Tanggal Kadaluarsa (Opsional)
@@ -260,7 +252,6 @@ const IssueCertificate = () => {
                                 )}
                             </div>
                         </div>
-
                         <div>
                             <label className="block text-sm font-medium text-gray-300 mb-2">Alamat Target</label>
                             <input
@@ -276,11 +267,10 @@ const IssueCertificate = () => {
                                 <p className="text-red-400 text-sm mt-1">{errors.targetAddress}</p>
                             )}
                         </div>
-
                         <button
                             type="submit"
                             disabled={isSubmitting}
-                            className="w-full btn-primary"
+                            className="w-full btn-primary group relative bg-gradient-to-r from-blue-600 to-purple-600 text-white px-8 py-4 rounded-lg transition-all duration-300 flex items-center justify-center space-x-2 overflow-hidden hover:shadow-lg hover:shadow-blue-500/25"
                         >
                             {isSubmitting ? 'Memproses...' : 'Terbitkan Sertifikat'}
                         </button>

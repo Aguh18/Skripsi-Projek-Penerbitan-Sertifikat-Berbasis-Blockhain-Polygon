@@ -175,6 +175,8 @@ const issueCertificate = async (req, res) => {
     const fileName = path.basename(filePath);
 
     // Use uploadLargeFile for better performance with large files
+    const storageClient = PinataStorageClient.getInstance();
+    await storageClient.initialize();
     const cid = await storageClient.uploadLargeFile(fileContent, fileName, 'application/pdf');
     console.log('📤 File uploaded to IPFS with CID:', cid);
 

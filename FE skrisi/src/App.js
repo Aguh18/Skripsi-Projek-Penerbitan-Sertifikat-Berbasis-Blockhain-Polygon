@@ -8,11 +8,12 @@ import {
   BrowserRouter as Router,
   Routes,
   Route,
-  useNavigate
+  Navigate
 } from 'react-router-dom';
 import axios from 'axios';
 import { AuthProvider } from './context/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
+import { WalletProvider } from './context/WalletContext';
 // All pages
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
@@ -27,6 +28,7 @@ import Certificates from './pages/Certificates';
 import Templates from './pages/Templates';
 import CreateCertificate from './pages/CreateCertificate';
 import Unauthorized from './pages/Unauthorized';
+import LandingPage from './pages/LandingPage';
 
 // Create axios instance
 const api = axios.create({
@@ -75,55 +77,58 @@ function App() {
   }, []);
 
   return (
-    <AuthProvider>
-      <Router>
-        <div className="animate-fade-in">
-          <Routes>
-            <Route path="/login" element={<Login />} />
-            <Route path="/unauthorized" element={<Unauthorized />} />
+    <WalletProvider>
+      <AuthProvider>
+        <Router>
+          <div className="animate-fade-in">
+            <Routes>
+              {/* Public routes */}
+              <Route path="/" element={<LandingPage />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/unauthorized" element={<Unauthorized />} />
 
-            {/* Protected routes for all authenticated users */}
-            <Route element={<ProtectedRoute />}>
-              <Route path="/" element={<Root />}>
-                <Route path="/dashboard" index element={<Dashboard />} />
-                <Route path="activity-log" element={<History />} />
-                <Route path="settings" element={<Settings />} />
-                <Route path="certificates" element={<Certificates />} />
-              </Route>
-            </Route>
+              {/* Protected routes */}
+              <Route element={<ProtectedRoute />}>
+                <Route path="/dashboard" element={<Root />}>
+                  <Route index element={<Dashboard />} />
+                  <Route path="activity-log" element={<History />} />
+                  <Route path="settings" element={<Settings />} />
+                  <Route path="certificates" element={<Certificates />} />
 
-            {/* Protected routes for issuers and verifiers */}
-            <Route element={<ProtectedRoute allowedRoles={['issuer_or_verifier']} />}>
-              <Route path="/" element={<Root />}>
-                <Route path="verify-certificate" element={<VerifyCertificate />} />
-              </Route>
-            </Route>
+                  {/* Routes for issuers and verifiers */}
+                  <Route element={<ProtectedRoute allowedRoles={['issuer_or_verifier']} />}>
+                    <Route path="verify-certificate" element={<VerifyCertificate />} />
+                  </Route>
 
-            {/* Protected routes for issuers only */}
-            <Route element={<ProtectedRoute allowedRoles={['issuer']} />}>
-              <Route path="/" element={<Root />}>
-                <Route path="issue-certificate" element={<IssueCertificate />} />
-                <Route path="issue-certificate/submit" element={<Submit />} />
-                <Route path="template" element={<Templates />} />
-                <Route path="upload-template" element={<UploadCert />} />
+                  {/* Routes for issuers only */}
+                  <Route element={<ProtectedRoute allowedRoles={['issuer']} />}>
+                    <Route path="issue-certificate" element={<IssueCertificate />} />
+                    <Route path="issue-certificate/submit" element={<Submit />} />
+                    <Route path="template" element={<Templates />} />
+                    <Route path="upload-template" element={<UploadCert />} />
+                  </Route>
+                </Route>
               </Route>
-            </Route>
-          </Routes>
-        </div>
-        <ToastContainer
-          position="top-right"
-          autoClose={3000}
-          hideProgressBar={false}
-          newestOnTop
-          closeOnClick
-          rtl={false}
-          pauseOnFocusLoss
-          draggable
-          pauseOnHover
-          theme="dark"
-        />
-      </Router>
-    </AuthProvider>
+
+              {/* Catch all route - redirect to dashboard if authenticated, otherwise to login */}
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+          </div>
+          <ToastContainer
+            position="top-right"
+            autoClose={3000}
+            hideProgressBar={false}
+            newestOnTop
+            closeOnClick
+            rtl={false}
+            pauseOnFocusLoss
+            draggable
+            pauseOnHover
+            theme="dark"
+          />
+        </Router>
+      </AuthProvider>
+    </WalletProvider>
   );
 }
 

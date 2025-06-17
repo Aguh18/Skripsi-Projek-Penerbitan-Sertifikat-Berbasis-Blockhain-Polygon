@@ -2,6 +2,9 @@
 pragma solidity ^0.8.20;
 
 contract CertificateRegistry {
+    address public admin;
+    mapping(address => bool) public issuers;
+
     // Struktur data untuk sertifikat
     struct Certificate {
         string id;
@@ -30,14 +33,53 @@ contract CertificateRegistry {
 
     // Event untuk mencatat pembatalan sertifikat
     event CertificateRevoked(string indexed id);
+    event IssuerAdded(address indexed issuer);
+    event IssuerRemoved(address indexed issuer);
+
+    // Modifier untuk memastikan hanya admin yang bisa memanggil fungsi
+    modifier onlyAdmin() {
+        require(msg.sender == admin, "Only admin can perform this action");
+        _;
+    }
 
     // Modifier untuk memastikan hanya issuer yang bisa memanggil fungsi
-    modifier onlyIssuer(string memory _id) {
+    modifier onlyIssuer() {
+        require(issuers[msg.sender] || msg.sender == admin, "Only issuer or admin can perform this action");
+        _;
+    }
+
+    // Modifier untuk memastikan hanya issuer atau admin yang bisa memanggil fungsi
+    modifier onlyIssuerOrAdmin(string memory _id) {
         require(
-            certificates[_id].issuerAddress == msg.sender,
-            "Only issuer can perform this action"
+            certificates[_id].issuerAddress == msg.sender || msg.sender == admin,
+            "Only issuer or admin can perform this action"
         );
         _;
+    }
+
+    constructor() {
+        admin = msg.sender;
+        issuers[msg.sender] = true; // Admin is also an issuer by default
+    }
+
+    function addIssuer(address _issuer) external onlyAdmin {
+        require(_issuer != address(0), "Invalid address");
+        require(!issuers[_issuer], "Address is already an issuer");
+        
+        issuers[_issuer] = true;
+        emit IssuerAdded(_issuer);
+    }
+
+    function removeIssuer(address _issuer) external onlyAdmin {
+        require(_issuer != admin, "Cannot remove admin as issuer");
+        require(issuers[_issuer], "Address is not an issuer");
+        
+        issuers[_issuer] = false;
+        emit IssuerRemoved(_issuer);
+    }
+
+    function isIssuer(address _address) external view returns (bool) {
+        return issuers[_address] || _address == admin;
     }
 
     // Fungsi untuk menerbitkan sertifikat baru
@@ -50,7 +92,7 @@ contract CertificateRegistry {
         string memory _issuerName,
         string memory _recipientName,
         address _targetAddress
-    ) external returns (string memory) {
+    ) external onlyIssuer returns (string memory) {
         // Pastikan ID tidak kosong
         require(bytes(_id).length > 0, "ID cannot be empty");
         // Pastikan ID belum digunakan
@@ -61,7 +103,7 @@ contract CertificateRegistry {
             certificateTitle: _certificateTitle,
             expiryDate: _expiryDate,
             issueDate: _issueDate,
-            cid : _cid,
+            cid: _cid,
             issuerAddress: msg.sender,
             issuerName: _issuerName,
             recipientName: _recipientName,
@@ -91,8 +133,8 @@ contract CertificateRegistry {
         return certificates[_id];
     }
 
-    // Fungsi untuk membatalkan sertifikat (hanya issuer)
-    function revokeCertificate(string memory _id) external onlyIssuer(_id) {
+    // Fungsi untuk membatalkan sertifikat (hanya issuer atau admin)
+    function revokeCertificate(string memory _id) external onlyIssuerOrAdmin(_id) {
         require(certificates[_id].isValid, "Certificate already revoked or invalid");
         certificates[_id].isValid = false;
         emit CertificateRevoked(_id);
