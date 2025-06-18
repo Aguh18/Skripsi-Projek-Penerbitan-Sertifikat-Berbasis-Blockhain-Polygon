@@ -21,33 +21,6 @@ const Submit = () => {
 
     const state = location.state;
 
-    // Helper: Auto switch or add network
-    const switchOrAddNetwork = async () => {
-        const { chainId, chainName, rpcUrls, nativeCurrency, blockExplorerUrls } = networkConfig;
-        try {
-            await window.ethereum.request({
-                method: 'wallet_switchEthereumChain',
-                params: [{ chainId }],
-            });
-        } catch (switchError) {
-            if (switchError.code === 4902) {
-                // Chain belum ada di MetaMask, tambahkan
-                await window.ethereum.request({
-                    method: 'wallet_addEthereumChain',
-                    params: [{
-                        chainId,
-                        chainName,
-                        rpcUrls,
-                        nativeCurrency,
-                        blockExplorerUrls,
-                    }],
-                });
-            } else {
-                throw switchError;
-            }
-        }
-    };
-
     // Initialize ethers.js with MetaMask
     useEffect(() => {
         const initEthers = async () => {
@@ -63,25 +36,8 @@ const Submit = () => {
                     throw new Error('Tidak ada akun yang ditemukan');
                 }
 
-                // Get current chain ID
-                let currentChainId = await window.ethereum.request({ method: 'eth_chainId' });
-                if (currentChainId !== networkConfig.chainId) {
-                    // Auto switch/add network
-                    await switchOrAddNetwork();
-                    // Ambil ulang chainId setelah switch
-                    currentChainId = await window.ethereum.request({ method: 'eth_chainId' });
-                }
-
-                // Verify network connection
+                // Create provider and signer (tanpa cek chain/network)
                 const provider = new BrowserProvider(window.ethereum);
-                const network = await provider.getNetwork();
-                const targetChainId = parseInt(networkConfig.chainId, 16);
-                if (network.chainId !== targetChainId) {
-                    toast.error('Terhubung ke jaringan yang salah. Silakan beralih ke jaringan Hardhat.');
-                    return;
-                }
-
-                // Create provider and signer
                 const signer = await provider.getSigner();
                 const contractInstance = new Contract(contractAddress, contractABI, signer);
 
@@ -100,22 +56,15 @@ const Submit = () => {
                     }
                 });
 
-                // Listen for chain changes
+                // Listen for chain changes (tanpa auto switch)
                 window.ethereum.on('chainChanged', async (chainId) => {
-                    if (chainId !== networkConfig.chainId) {
-                        setIsMetaMaskConnected(false);
-                        toast.error('Silakan beralih ke jaringan Hardhat');
-                        // Auto switch/add network jika user ganti chain
-                        await switchOrAddNetwork();
-                    } else {
-                        setIsMetaMaskConnected(true);
-                        // Reinitialize contract with new chain
-                        const newProvider = new BrowserProvider(window.ethereum);
-                        const newSigner = await newProvider.getSigner();
-                        const newContract = new Contract(contractAddress, contractABI, newSigner);
-                        setContract(newContract);
-                        setSigner(newSigner);
-                    }
+                    setIsMetaMaskConnected(true);
+                    // Reinitialize contract with new chain
+                    const newProvider = new BrowserProvider(window.ethereum);
+                    const newSigner = await newProvider.getSigner();
+                    const newContract = new Contract(contractAddress, contractABI, newSigner);
+                    setContract(newContract);
+                    setSigner(newSigner);
                 });
 
             } catch (err) {

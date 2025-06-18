@@ -4,6 +4,10 @@ async function main() {
     // Get the contract factory
     const CertificateRegistry = await hre.ethers.getContractFactory("CertificateRegistry");
 
+    // Get deployer address
+    const [deployer] = await hre.ethers.getSigners();
+    console.log("Deploying contract with admin (deployer) address:", deployer.address);
+
     // Deploy the contract
     const certificateRegistry = await CertificateRegistry.deploy();
 
