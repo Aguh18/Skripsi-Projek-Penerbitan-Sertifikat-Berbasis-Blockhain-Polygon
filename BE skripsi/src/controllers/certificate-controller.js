@@ -200,7 +200,7 @@ const issueCertificate = async (req, res) => {
         issuerAddress: userData.walletAddress,
         filePath: `https://gateway.pinata.cloud/ipfs/${cid}`,
         ipfsCid: cid,
-        status: 'ACTIVE'
+        status: 'DRAFT'
       }
     });
 
@@ -506,4 +506,119 @@ const deleteTemplateHandler = async (req, res) => {
   }
 };
 
-module.exports = { create, issueCertificate, verifyCertificate, uploadTemplateHandler, getTemplateHandler, getCertificatesByTargetAddress, getCertificatesByIssuerAddress, deleteTemplateHandler };
+// Helper untuk update status sertifikat
+const setCertificateStatus = async (certificateId, status) => {
+  await prisma.certificate.update({
+    where: { id: certificateId },
+    data: { status }
+  });
+};
+
+// Contoh penggunaan setelah publish ke blockchain:
+// await setCertificateStatus(certificateId, 'ACTIVE');
+// Contoh penggunaan setelah revoke di blockchain:
+// await setCertificateStatus(certificateId, 'REVOKED');
+
+const getDraftCertificatesByTemplate = async (req, res) => {
+  try {
+    const userData = decodeToken(req.headers.authorization);
+    if (!userData?.walletAddress) {
+      return res.status(StatusCodes.UNAUTHORIZED).json({
+        success: false,
+        message: 'Token tidak valid atau kadaluarsa',
+        error: 'Invalid or expired token',
+        data: {},
+      });
+    }
+
+    // Get all draft certificates grouped by template
+    const draftCertificates = await prisma.certificate.findMany({
+      where: {
+        issuerAddress: userData.walletAddress,
+        status: 'DRAFT'
+      },
+      include: {
+        template: {
+          select: {
+            id: true,
+            name: true,
+            filePath: true
+          }
+        },
+        recipient: {
+          select: {
+            name: true,
+            walletAddress: true
+          }
+        }
+      },
+      orderBy: {
+        createdAt: 'desc'
+      }
+    });
+
+    // Group certificates by template
+    const groupedCertificates = draftCertificates.reduce((acc, cert) => {
+      const templateId = cert.template.id;
+      if (!acc[templateId]) {
+        acc[templateId] = {
+          template: cert.template,
+          certificates: []
+        };
+      }
+      acc[templateId].certificates.push(cert);
+      return acc;
+    }, {});
+
+    return res.status(StatusCodes.OK).json({
+      success: true,
+      message: 'Draft certificates retrieved successfully',
+      error: {},
+      data: Object.values(groupedCertificates)
+    });
+
+  } catch (err) {
+    console.error('🔥 Error getting draft certificates:', err.message);
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      success: false,
+      message: 'Error getting draft certificates',
+      error: err.message,
+      data: {},
+    });
+  }
+};
+
+const getCertificateById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const certificate = await prisma.certificate.findUnique({
+      where: { id },
+      include: {
+        template: true,
+        recipient: true,
+        issuer: true,
+      },
+    });
+    if (!certificate) {
+      return res.status(404).json({
+        success: false,
+        message: "Sertifikat tidak ditemukan",
+        data: {},
+      });
+    }
+    return res.status(200).json({
+      success: true,
+      message: "Sertifikat ditemukan",
+      data: certificate,
+    });
+  } catch (err) {
+    return res.status(500).json({
+      success: false,
+      message: "Gagal mengambil data sertifikat",
+      error: err.message,
+      data: {},
+    });
+  }
+};
+
+module.exports = { create, issueCertificate, verifyCertificate, uploadTemplateHandler, getTemplateHandler, getCertificatesByTargetAddress, getCertificatesByIssuerAddress, deleteTemplateHandler, getDraftCertificatesByTemplate, setCertificateStatus, getCertificateById };

@@ -29,6 +29,8 @@ import Templates from './pages/Templates';
 import CreateCertificate from './pages/CreateCertificate';
 import Unauthorized from './pages/Unauthorized';
 import LandingPage from './pages/LandingPage';
+import DraftCertificates from './pages/DraftCertificates';
+import PublishCertificate from './pages/PublishCertificate';
 
 // Create axios instance
 const api = axios.create({
@@ -103,7 +105,7 @@ function App() {
                   {/* Routes for issuers only */}
                   <Route element={<ProtectedRoute allowedRoles={['issuer']} />}>
                     <Route path="issue-certificate" element={<IssueCertificate />} />
-                    <Route path="issue-certificate/submit" element={<Submit />} />
+                    <Route path="issue-certificate/submit/:id" element={<Submit />} />
                     <Route path="template" element={<Templates />} />
                     <Route path="upload-template" element={<UploadCert />} />
                   </Route>
@@ -112,6 +114,12 @@ function App() {
 
               {/* Catch all route - redirect to dashboard if authenticated, otherwise to login */}
               <Route path="*" element={<Navigate to="/" replace />} />
+
+              {/* Additional route for DraftCertificates */}
+              <Route path="/certificates/drafts" element={<DraftCertificates />} />
+
+              {/* Additional route for PublishCertificate */}
+              <Route path="/certificates/:id/publish" element={<PublishCertificate />} />
             </Routes>
           </div>
           <ToastContainer

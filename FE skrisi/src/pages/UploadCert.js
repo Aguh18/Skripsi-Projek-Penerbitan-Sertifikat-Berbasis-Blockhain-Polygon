@@ -205,7 +205,7 @@ const UploadCert = () => {
             </div>
             <div className="max-w-6xl mx-auto p-6 relative z-10">
                 <h1 className="text-3xl font-bold mb-8 text-gradient bg-clip-text text-transparent bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400">Upload Template Sertifikat</h1>
-                {isLoading && <LoadingOverlay />}
+            {isLoading && <LoadingOverlay />}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     {/* Form Section */}
                     <div className="card space-y-6">

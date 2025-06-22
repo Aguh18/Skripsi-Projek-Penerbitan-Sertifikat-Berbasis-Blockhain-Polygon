@@ -1,9 +1,11 @@
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, useParams } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { BrowserProvider, Contract, isAddress, keccak256, parseUnits } from 'ethers';
 import contractABI from '../ABI.json';
 import { toast } from 'react-toastify';
 import { NETWORKS, CONTRACTS, DEFAULT_NETWORK, APP_CONFIG } from '../config/network';
+import axios from 'axios';
+import { getEnv } from '../utils/env';
 
 const contractAddress = CONTRACTS.certificateRegistry.address;
 const networkConfig = NETWORKS[DEFAULT_NETWORK];
@@ -11,6 +13,7 @@ const networkConfig = NETWORKS[DEFAULT_NETWORK];
 const Submit = () => {
     const navigate = useNavigate();
     const location = useLocation();
+    const { id } = useParams();
     const [provider, setProvider] = useState(null);
     const [signer, setSigner] = useState(null);
     const [contract, setContract] = useState(null);
@@ -18,8 +21,61 @@ const Submit = () => {
     const [error, setError] = useState('');
     const [fileHash, setFileHash] = useState('-');
     const [isMetaMaskConnected, setIsMetaMaskConnected] = useState(false);
+    const [certificateData, setCertificateData] = useState(null);
+    const [loading, setLoading] = useState(true);
 
-    const state = location.state;
+    // Fetch certificate data from backend
+    useEffect(() => {
+        const fetchCertificateData = async () => {
+            try {
+                setLoading(true);
+                const token = localStorage.getItem('token');
+                if (!token) {
+                    toast.error('Silakan login terlebih dahulu');
+                    navigate('/login');
+                    return;
+                }
+
+                const response = await axios.get(`${getEnv('BASE_URL')}/api/certificate/${id}`, {
+                    headers: {
+                        Authorization: `Bearer ${token}`
+                    }
+                });
+
+                if (response.data.success) {
+                    const data = response.data.data;
+                    setCertificateData({
+                        id: data.id,
+                        certificateTitle: data.certificateTitle || 'Certificate',
+                        expiryDate: data.expiryDate || '',
+                        issueDate: data.issueDate || new Date().toISOString(),
+                        fileCid: data.ipfsCid || '',
+                        filePath: data.filePath || '',
+                        issuerName: data.issuerName || 'Issuer',
+                        recipientName: data.recipientName || 'Recipient',
+                        targetAddress: data.targetAddress || '',
+                        hash: data.id
+                    });
+                } else {
+                    toast.error('Sertifikat tidak ditemukan');
+                    navigate('/dashboard/certificates');
+                }
+            } catch (error) {
+                console.error('Error fetching certificate:', error);
+                toast.error('Gagal mengambil data sertifikat');
+                navigate('/dashboard/certificates');
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        if (id) {
+            fetchCertificateData();
+        } else {
+            toast.error('ID sertifikat tidak ditemukan');
+            navigate('/dashboard/certificates');
+        }
+    }, [id, navigate]);
 
     // Initialize ethers.js with MetaMask
     useEffect(() => {
@@ -85,49 +141,36 @@ const Submit = () => {
         };
     }, []);
 
+    // Generate hash from file after certificate data is loaded
     useEffect(() => {
-        if (!state || !state.data) {
-            navigate('/issue-certificate', { replace: true });
-        }
-    }, [state, navigate]);
+        if (!certificateData || !certificateData.filePath) return;
 
-    // Generate hash from local file (PDF) after mount
-    useEffect(() => {
-        if (!state || !state.data || !state.data.filePath) return;
-        // Try to fetch the file as ArrayBuffer and hash it
         const fetchAndHash = async () => {
             try {
-                const response = await fetch(state.data.filePath);
+                const response = await fetch(certificateData.filePath);
                 const arrayBuffer = await response.arrayBuffer();
                 const uint8Array = new Uint8Array(arrayBuffer);
                 const hash = keccak256(uint8Array);
                 setFileHash(hash);
             } catch (err) {
+                console.error('Error generating file hash:', err);
                 setFileHash('-');
             }
         };
         fetchAndHash();
-    }, [state]);
+    }, [certificateData]);
 
-    if (!state || !state.data) {
-        return null;
+    if (loading) {
+        return (
+            <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 flex items-center justify-center">
+                <div className="text-white text-xl">Memuat data sertifikat...</div>
+            </div>
+        );
     }
 
-    const data = state.data;
-    console.log('Data from state:', data);
-
-    const fileCid = data.fileCid || 'https://bafybeibgunsp4yfmxonp4vji3ntzpyis32wh33hucb6tsdg4xbogdniyyu.ipfs.w3s.link/certificate_Asep_Teguh_hidayat_2025-05-04T03-57-46-396Z.pdf';
-
-    const certificateData = {
-        id: data.hash || data.id || 'CERT123',
-        certificateTitle: data.certificateTitle || 'Certificate of Achievement',
-        expiryDate: data.expiryDate || '',
-        issueDate: data.issueDate || '2025-05-16',
-        cid: data.fileCid || 'QmT5NvUtoM5nXy6v7e4f3g3g3g3g3g3g3g3g3g3g3g3g3g',
-        issuerName: data.issuerName || 'Universitas XYZ',
-        recipientName: data.recipientName || 'Recipient Name',
-        targetAddress: data.targetAddress || '0xFde6f7aC02514dDa4B3bB7C135EB0A39C90243A4',
-    };
+    if (!certificateData) {
+        return null;
+    }
 
     const handleIssueCertificate = async () => {
         if (!window.ethereum) {
@@ -175,7 +218,7 @@ const Submit = () => {
             const formattedExpiryDate = certificateData.expiryDate ? new Date(certificateData.expiryDate).toISOString().split('T')[0] : '';
 
             // Ensure CID is properly formatted
-            const formattedCid = certificateData.cid.startsWith('0x') ? certificateData.cid : `0x${certificateData.cid}`;
+            const formattedCid = certificateData.fileCid.startsWith('0x') ? certificateData.fileCid : `0x${certificateData.fileCid}`;
 
             console.log('Sending data to contract:', {
                 id: certificateData.id,
@@ -250,7 +293,7 @@ const Submit = () => {
 
                 // Wait for 3 seconds before navigating
                 setTimeout(() => {
-                    navigate('/dashboard');
+                    navigate('/dashboard/certificates');
                 }, 3000);
 
             } catch (txError) {
@@ -277,57 +320,82 @@ const Submit = () => {
                 <div className="absolute bottom-1/3 right-1/3 w-[600px] h-[600px] bg-gradient-to-r from-cyan-500/20 via-blue-500/20 to-purple-500/20 rounded-full blur-3xl mix-blend-screen"></div>
             </div>
             <div className="max-w-6xl mx-auto p-6 relative z-10">
-                <h1 className="text-3xl font-bold mb-8 text-gradient bg-clip-text text-transparent bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400">Detail Sertifikat</h1>
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    {/* Certificate Data Section */}
-                    <div className="card space-y-6">
-                        <h2 className="text-xl font-semibold text-gray-300 mb-4">Data Sertifikat</h2>
+                <div className="mb-8">
+                    <h1 className="text-3xl font-bold text-gradient bg-clip-text text-transparent bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 mb-2">
+                        Terbitkan Sertifikat ke Blockchain
+                    </h1>
+                    <p className="text-gray-400">Konfirmasi dan terbitkan sertifikat ke blockchain untuk keamanan dan transparansi</p>
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    {/* Certificate Details */}
+                    <div className="card bg-gray-800/30 backdrop-blur-sm border border-gray-700/30 rounded-2xl shadow-xl p-6">
+                        <h2 className="text-xl font-semibold text-white mb-6 flex items-center">
+                            <svg className="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
+                            Detail Sertifikat
+                        </h2>
 
                         <div className="space-y-4">
                             <div>
-                                <label className="block text-sm font-medium text-gray-400 mb-1">Judul</label>
+                                <label className="block text-sm font-medium text-gray-400 mb-1">ID Sertifikat</label>
+                                <div className="bg-gray-800/50 p-3 rounded-lg border border-gray-700/30 font-mono text-sm text-gray-300">
+                                    {certificateData.id}
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-400 mb-1">Judul Sertifikat</label>
                                 <div className="bg-gray-800/50 p-3 rounded-lg border border-gray-700/30 text-gray-300">
                                     {certificateData.certificateTitle}
                                 </div>
                             </div>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-400 mb-1">Nama Penerima</label>
+                                    <div className="bg-gray-800/50 p-3 rounded-lg border border-gray-700/30 text-gray-300">
+                                        {certificateData.recipientName}
+                                    </div>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-400 mb-1">Nama Penerbit</label>
+                                    <div className="bg-gray-800/50 p-3 rounded-lg border border-gray-700/30 text-gray-300">
+                                        {certificateData.issuerName}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
                                 <div>
                                     <label className="block text-sm font-medium text-gray-400 mb-1">Tanggal Terbit</label>
                                     <div className="bg-gray-800/50 p-3 rounded-lg border border-gray-700/30 text-gray-300">
-                                        {certificateData.issueDate}
+                                        {new Date(certificateData.issueDate).toLocaleDateString('id-ID')}
                                     </div>
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium text-gray-400 mb-1">Tanggal Kedaluwarsa</label>
                                     <div className="bg-gray-800/50 p-3 rounded-lg border border-gray-700/30 text-gray-300">
-                                        {certificateData.expiryDate || 'Tidak ada'}
+                                        {certificateData.expiryDate ? new Date(certificateData.expiryDate).toLocaleDateString('id-ID') : 'Tidak ada'}
                                     </div>
                                 </div>
                             </div>
+
                             <div>
-                                <label className="block text-sm font-medium text-gray-400 mb-1">Penerbit</label>
-                                <div className="bg-gray-800/50 p-3 rounded-lg border border-gray-700/30 text-gray-300">
-                                    {certificateData.issuerName}
-                                </div>
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-400 mb-1">Penerima</label>
-                                <div className="bg-gray-800/50 p-3 rounded-lg border border-gray-700/30 text-gray-300">
-                                    {certificateData.recipientName}
-                                </div>
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-400 mb-1">Alamat Target</label>
+                                <label className="block text-sm font-medium text-gray-400 mb-1">Alamat Wallet Penerima</label>
                                 <div className="bg-gray-800/50 p-3 rounded-lg border border-gray-700/30 font-mono text-sm text-gray-300 break-all">
                                     {certificateData.targetAddress}
                                 </div>
                             </div>
+
                             <div>
-                                <label className="block text-sm font-medium text-gray-400 mb-1">CID File</label>
+                                <label className="block text-sm font-medium text-gray-400 mb-1">IPFS CID</label>
                                 <div className="bg-gray-800/50 p-3 rounded-lg border border-gray-700/30 font-mono text-sm text-gray-300 break-all">
-                                    {certificateData.cid}
+                                    {certificateData.fileCid}
                                 </div>
                             </div>
+
                             <div>
                                 <label className="block text-sm font-medium text-gray-400 mb-1">Hash File (keccak256)</label>
                                 <div className="bg-gray-800/50 p-3 rounded-lg border border-gray-700/30 font-mono text-sm text-gray-300 break-all">
@@ -359,13 +427,19 @@ const Submit = () => {
                     </div>
 
                     {/* PDF Preview Section */}
-                    <div className="card">
-                        <h2 className="text-xl font-semibold text-gray-300 mb-4">Pratinjau Sertifikat</h2>
-                        <div className="relative w-full h-[calc(100vh-12rem)] rounded-lg overflow-hidden border border-gray-700/30">
+                    <div className="card bg-gray-800/30 backdrop-blur-sm border border-gray-700/30 rounded-2xl shadow-xl p-6">
+                        <h2 className="text-xl font-semibold text-white mb-6 flex items-center">
+                            <svg className="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                            </svg>
+                            Preview Sertifikat
+                        </h2>
+                        <div className="bg-gray-900/50 rounded-lg border border-gray-700/30 overflow-hidden">
                             <iframe
-                                src={fileCid}
-                                title="Certificate PDF"
-                                className="absolute inset-0 w-full h-full"
+                                src={certificateData.filePath}
+                                className="w-full h-96"
+                                title="Certificate Preview"
                             />
                         </div>
                     </div>

@@ -19,4 +19,10 @@ router.get("/template", authMiddleware, CertificateController.getTemplateHandler
 router.get("/by-target", authMiddleware, CertificateController.getCertificatesByTargetAddress);
 router.get("/by-issuer", authMiddleware, CertificateController.getCertificatesByIssuerAddress);
 
+// Route untuk mendapatkan sertifikat DRAFT yang dikelompokkan berdasarkan template
+router.get("/drafts", authMiddleware, requireIssuer, CertificateController.getDraftCertificatesByTemplate);
+
+// Route untuk mendapatkan detail sertifikat berdasarkan ID
+router.get("/:id", authMiddleware, CertificateController.getCertificateById);
+
 module.exports = router;
