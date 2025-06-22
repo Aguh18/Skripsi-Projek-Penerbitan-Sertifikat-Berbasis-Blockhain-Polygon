@@ -7,7 +7,8 @@
     "test": "npx hardhat test",
     "compile": "npx hardhat compile",
     "node": "npx hardhat node",
-    "deploy": "npx hardhat run scripts/deploy.js --network localhost"
+    "deploy": "npx hardhat run scripts/deploy.js --network localhost",
+    "accounts": "npx hardhat run scripts/get-accounts.js"
   },
   "dependencies": {
     "@openzeppelin/contracts": "^4.9.3"
