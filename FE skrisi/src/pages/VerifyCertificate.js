@@ -62,25 +62,6 @@ const VerifyCertificate = () => {
       }
 
       try {
-        const currentChainId = await window.ethereum.request({ method: 'eth_chainId' });
-        if (currentChainId !== networkConfig.chainId) {
-          try {
-            await window.ethereum.request({
-              method: 'wallet_switchEthereumChain',
-              params: [{ chainId: networkConfig.chainId }],
-            });
-          } catch (switchError) {
-            if (switchError.code === 4902) {
-              await window.ethereum.request({
-                method: 'wallet_addEthereumChain',
-                params: [networkConfig],
-              });
-            } else {
-              throw switchError;
-            }
-          }
-        }
-
         const provider = new BrowserProvider(window.ethereum);
         const signer = await provider.getSigner();
         setContract(new Contract(contractAddress, contractABI, signer));

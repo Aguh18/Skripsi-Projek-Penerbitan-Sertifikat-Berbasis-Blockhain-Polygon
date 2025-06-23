@@ -26,7 +26,7 @@ module.exports = {
   },
   networks: {
     hardhat: {
-      chainId: 31337,
+      chainId: 6969,
       accounts: {
         mnemonic: "test test test test test test test test test test test junk",
         path: "m/44'/60'/0'/0",
@@ -36,8 +36,8 @@ module.exports = {
       }
     },
     localhost: {
-      url: "http://127.0.0.1:8545",
-      chainId: 31337
+      url: "http://127.0.0.1:6969",
+      chainId: 6969
     }
   },
   paths: {

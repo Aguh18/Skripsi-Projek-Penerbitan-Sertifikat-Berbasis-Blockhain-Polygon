@@ -138,7 +138,8 @@ const IssueCertificate = () => {
                     theme: "dark",
                 });
                 setTimeout(() => {
-                    navigate('/dashboard/issue-certificate/submit', {
+                    const id = response.data.data.id || response.data.data._id;
+                    navigate(`/dashboard/issue-certificate/submit/${id}`, {
                         state: {
                             data: response.data.data,
                         },

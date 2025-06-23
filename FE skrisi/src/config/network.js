@@ -1,9 +1,9 @@
 // Network configurations
 export const NETWORKS = {
     hardhat: {
-        chainId: '0x7A69', // 31337 in hex
+        chainId: '0x1B39', // 6969 in hex
         chainName: 'Hardhat Local',
-        rpcUrls: ['http://127.0.0.1:8545'],
+        rpcUrls: ['http://127.0.0.1:6969'],
         nativeCurrency: {
             name: 'Ether',
             symbol: 'ETH',

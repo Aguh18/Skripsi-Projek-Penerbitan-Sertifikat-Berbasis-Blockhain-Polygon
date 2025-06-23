@@ -4,6 +4,7 @@ import { BrowserProvider, Contract } from "ethers";
 import axios from 'axios';
 import { getEnv } from '../utils/env';
 import { useAuth } from '../context/AuthContext';
+import { NETWORKS, DEFAULT_NETWORK } from '../config/network';
 
 const contractAddress = process.env.REACT_APP_CONTRACT_ADDRESS;
 const baseUrl = process.env.REACT_APP_BASE_URL;
@@ -46,6 +47,35 @@ function Login() {
                 const accounts = await window.ethereum.request({ method: "eth_requestAccounts" });
                 if (!accounts || accounts.length === 0) throw new Error("No accounts found");
                 const walletAddress = accounts[0];
+
+                // Check and switch chain if needed
+                const { chainId, chainName, rpcUrls, nativeCurrency, blockExplorerUrls } = NETWORKS[DEFAULT_NETWORK];
+                const currentChainId = await window.ethereum.request({ method: 'eth_chainId' });
+                if (currentChainId !== chainId) {
+                    try {
+                        await window.ethereum.request({
+                            method: 'wallet_switchEthereumChain',
+                            params: [{ chainId }],
+                        });
+                    } catch (switchError) {
+                        // If the chain has not been added to MetaMask, add it
+                        if (switchError.code === 4902) {
+                            await window.ethereum.request({
+                                method: 'wallet_addEthereumChain',
+                                params: [{
+                                    chainId,
+                                    chainName,
+                                    rpcUrls,
+                                    nativeCurrency,
+                                    blockExplorerUrls,
+                                }],
+                            });
+                        } else {
+                            throw switchError;
+                        }
+                    }
+                }
+
                 // ethers v6: BrowserProvider
                 const provider = new BrowserProvider(window.ethereum);
                 const signer = await provider.getSigner();
