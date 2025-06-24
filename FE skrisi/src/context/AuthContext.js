@@ -62,13 +62,21 @@ export const AuthProvider = ({ children }) => {
     };
 
     const isIssuer = () => {
-        console.log('Checking isIssuer, current role:', role); // Debug log
-        return role === 'issuer';
+        // Admin juga dianggap issuer
+        return role === 'issuer' || role === 'admin';
     };
 
     const isVerifier = () => {
-        console.log('Checking isVerifier, current role:', role); // Debug log
-        return role === 'verifier';
+        // Admin juga dianggap verifier
+        return role === 'verifier' || role === 'admin';
+    };
+
+    const isAdmin = () => {
+        return role === 'admin';
+    };
+
+    const isAdminOrIssuer = () => {
+        return role === 'admin' || role === 'issuer';
     };
 
     if (loading) {
@@ -83,6 +91,8 @@ export const AuthProvider = ({ children }) => {
             logout,
             isIssuer,
             isVerifier,
+            isAdmin,
+            isAdminOrIssuer,
             loading
         }}>
             {children}

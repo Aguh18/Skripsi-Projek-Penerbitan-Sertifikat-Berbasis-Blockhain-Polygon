@@ -25,4 +25,10 @@ router.get("/drafts", authMiddleware, requireIssuer, CertificateController.getDr
 // Route untuk mendapatkan detail sertifikat berdasarkan ID
 router.get("/:id", authMiddleware, CertificateController.getCertificateById);
 
+// Bulk upload endpoint
+router.post("/bulk-generate", authMiddleware, requireIssuer, CertificateController.bulkGenerateCertificates);
+
+// Bulk update status endpoint
+router.post("/set-status", authMiddleware, requireIssuer, CertificateController.setCertificateStatusBulk);
+
 module.exports = router;

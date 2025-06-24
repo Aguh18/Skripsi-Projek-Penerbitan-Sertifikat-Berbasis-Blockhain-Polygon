@@ -296,6 +296,14 @@ const Submit = () => {
                     navigate('/dashboard/certificates');
                 }, 3000);
 
+                // After successful contract call, add:
+                await axios.post(
+                    `${getEnv('BASE_URL')}/api/certificate/set-status`,
+                    { ids: [certificateData.id], status: 'ACTIVE' },
+                    { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }
+                );
+                toast.success('Sertifikat berhasil diterbitkan ke blockchain & status diupdate!');
+
             } catch (txError) {
                 // Close the pending toast
                 toast.dismiss(pendingToast);

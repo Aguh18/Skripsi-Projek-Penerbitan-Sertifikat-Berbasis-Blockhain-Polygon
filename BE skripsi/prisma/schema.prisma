@@ -12,11 +12,12 @@ model User {
   name          String?     // Nullable
   email         String?     @unique // Nullable, tapi unik jika diisi
   password      String?     // Nullable
-  role          String      @default("verifier") // Role: "issuer" atau "verifier"
+  role          String      @default("verifier") // Role: "admin", "issuer" atau "verifier"
   createdAt     DateTime?   // Nullable, tanpa default
   templates     Template[]  // Relasi ke Template
   issuedCertificates Certificate[] @relation("CertificateIssuer") // Sertifikat yang diterbitkan
   receivedCertificates Certificate[] @relation("CertificateRecipient") // Sertifikat yang diterima
+  issuerApplications IssuerApplication[]
 }
 
 model Template {
@@ -52,4 +53,18 @@ model Certificate {
   updatedAt        DateTime  @updatedAt
   issuer           User      @relation("CertificateIssuer", fields: [issuerAddress], references: [walletAddress])
   recipient        User      @relation("CertificateRecipient", fields: [targetAddress], references: [walletAddress])
+}
+
+model IssuerApplication {
+  id          String   @id @default(uuid())
+  userId      String   // walletAddress pemohon
+  user        User     @relation(fields: [userId], references: [walletAddress])
+  name        String
+  email       String
+  reason      String
+  status      String   @default("PENDING") // PENDING, APPROVED, REJECTED
+  reviewedBy  String?  // walletAddress admin yang review
+  reviewedAt  DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }

@@ -1,0 +1,63 @@
+@startuml
+' Pengaturan tampilan agar lebih rapi
+skinparam componentStyle rectangle
+skinparam packageStyle rectangle
+skinparam linetype ortho
+' Ubah arah diagram agar lebih rapi
+skinparam defaultTextAlignment center
+' Gunakan top to bottom agar panah lebih sedikit crossing
+' Atur urutan komponen agar panah lebih lurus
+
+left to right direction
+
+package "Frontend (React)" {
+  [Landing Page]
+  [Verify Certificate Page]
+  [Login Page]
+  [Users Page]
+  [Issue Certificate Page]
+  [MetaMask] as MM
+  [Templates Page]
+  [Certificates Page]
+  [Dashboard Page]
+}
+
+package "Backend (Express)" {
+  [User API]
+  [Certificate API]
+  [Approval API]
+}
+
+[IPFS] as IPFS
+[Smart Contract] as SC
+database "Database" as DB
+
+' Verifikasi
+[Landing Page] --> SC : verifikasi
+[Verify Certificate Page] --> SC : verifikasi
+
+' Login
+[Login Page] --> MM
+[Login Page] --> [User API]
+
+' Users
+[Users Page] --> [User API]
+[Users Page] --> [Approval API]
+
+' Issue Certificate
+[Issue Certificate Page] --> [Certificate API]
+[Issue Certificate Page] --> [User API]
+[Issue Certificate Page] --> MM
+[Issue Certificate Page] --> SC : publish
+
+' Templates & Certificates
+[Templates Page] --> [Certificate API]
+[Certificates Page] --> [Certificate API]
+
+' Backend ke storage/blockchain
+[Certificate API] --> IPFS : upload file/template
+[Certificate API] --> DB
+MM --> SC
+[Backend (Express)] --> DB
+[Backend (Express)] --> SC
+@enduml 

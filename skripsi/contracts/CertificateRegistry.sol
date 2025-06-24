@@ -139,4 +139,49 @@ contract CertificateRegistry {
         certificates[_id].isValid = false;
         emit CertificateRevoked(_id);
     }
+
+    function issueCertificatesBulk(
+        string[] memory _ids,
+        string[] memory _certificateTitles,
+        string[] memory _expiryDates,
+        string[] memory _issueDates,
+        string[] memory _cids,
+        string[] memory _issuerNames,
+        string[] memory _recipientNames,
+        address[] memory _targetAddresses
+    ) external onlyIssuer {
+        require(
+            _ids.length == _certificateTitles.length &&
+            _ids.length == _expiryDates.length &&
+            _ids.length == _issueDates.length &&
+            _ids.length == _cids.length &&
+            _ids.length == _issuerNames.length &&
+            _ids.length == _recipientNames.length &&
+            _ids.length == _targetAddresses.length,
+            "Array length mismatch"
+        );
+        for (uint i = 0; i < _ids.length; i++) {
+            require(bytes(_ids[i]).length > 0, "ID cannot be empty");
+            require(bytes(certificates[_ids[i]].id).length == 0, "ID already exists");
+            certificates[_ids[i]] = Certificate({
+                id: _ids[i],
+                certificateTitle: _certificateTitles[i],
+                expiryDate: _expiryDates[i],
+                issueDate: _issueDates[i],
+                cid: _cids[i],
+                issuerAddress: msg.sender,
+                issuerName: _issuerNames[i],
+                recipientName: _recipientNames[i],
+                targetAddress: _targetAddresses[i],
+                isValid: true
+            });
+            emit CertificateIssued(
+                _ids[i],
+                msg.sender,
+                _targetAddresses[i],
+                _recipientNames[i],
+                _issueDates[i]
+            );
+        }
+    }
 }

@@ -4,15 +4,11 @@ import { toast } from 'react-toastify';
 import { BrowserProvider, Contract, keccak256 } from 'ethers';
 import contractABI from '../ABI.json';
 import { FiCheckCircle, FiShield, FiFileText, FiUsers, FiLock, FiGlobe, FiClock, FiAward, FiTrendingUp, FiDatabase, FiArrowDown } from 'react-icons/fi';
+import { NETWORKS, DEFAULT_NETWORK, CONTRACTS } from '../config/network';
+import { useAuth } from '../context/AuthContext';
 
-const contractAddress = '0x5FbDB2315678afecb367f032d93F642f64180aa3';
-const networkConfig = {
-    chainId: '0x7a69',
-    chainName: 'Hardhat Local',
-    rpcUrls: ['http://127.0.0.1:8545/'],
-    nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
-    blockExplorerUrls: [],
-};
+const contractAddress = CONTRACTS.certificateRegistry.address;
+const networkConfig = NETWORKS[DEFAULT_NETWORK];
 
 const LandingPage = () => {
     const [contract, setContract] = useState(null);
@@ -30,6 +26,8 @@ const LandingPage = () => {
     const [scrollDirection, setScrollDirection] = useState('down');
     const [lastScrollY, setLastScrollY] = useState(0);
     const [isScrolling, setIsScrolling] = useState(false);
+
+    const { user } = useAuth();
 
     useEffect(() => {
         const handleMouseMove = (e) => {
@@ -237,6 +235,14 @@ const LandingPage = () => {
         }
     };
 
+    // Tambahkan fungsi scroll smooth ke verifikasi
+    const scrollToVerification = () => {
+        const section = document.getElementById('verification');
+        if (section) {
+            section.scrollIntoView({ behavior: 'smooth' });
+        }
+    };
+
     return (
         <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 overflow-hidden relative">
             {/* Space Background Effects */}
@@ -310,27 +316,43 @@ const LandingPage = () => {
                         </p>
                         <div className="flex justify-center space-x-4"
                             style={{ transform: calculateParallax(0, 0.015) }}>
-                            <Link
-                                to="/login"
-                                className="group relative bg-gradient-to-r from-blue-600 to-purple-600 text-white px-8 py-4 rounded-lg transition-all duration-300 flex items-center space-x-2 text-lg overflow-hidden hover:shadow-lg hover:shadow-blue-500/25"
-                            >
-                                <div className="absolute inset-0 bg-gradient-to-r from-purple-600 to-blue-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                                <span className="relative z-10 flex items-center">
-                                    <svg className="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
-                                    </svg>
-                                    Login dengan MetaMask
-                                </span>
-                            </Link>
-                            <a
-                                href="#verification"
+                            {user ? (
+                                <Link
+                                    to="/dashboard"
+                                    className="group relative bg-gradient-to-r from-blue-600 to-purple-600 text-white px-8 py-4 rounded-lg transition-all duration-300 flex items-center space-x-2 text-lg overflow-hidden hover:shadow-lg hover:shadow-blue-500/25"
+                                >
+                                    <div className="absolute inset-0 bg-gradient-to-r from-purple-600 to-blue-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                                    <span className="relative z-10 flex items-center">
+                                        <svg className="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                                        </svg>
+                                        Masuk Dashboard
+                                    </span>
+                                </Link>
+                            ) : (
+                                <Link
+                                    to="/login"
+                                    className="group relative bg-gradient-to-r from-blue-600 to-purple-600 text-white px-8 py-4 rounded-lg transition-all duration-300 flex items-center space-x-2 text-lg overflow-hidden hover:shadow-lg hover:shadow-blue-500/25"
+                                >
+                                    <div className="absolute inset-0 bg-gradient-to-r from-purple-600 to-blue-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                                    <span className="relative z-10 flex items-center">
+                                        <svg className="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                                        </svg>
+                                        Login dengan MetaMask
+                                    </span>
+                                </Link>
+                            )}
+                            <button
+                                type="button"
+                                onClick={scrollToVerification}
                                 className="group relative bg-gray-800/50 backdrop-blur-sm text-white px-8 py-4 rounded-lg transition-all duration-300 flex items-center space-x-2 text-lg overflow-hidden hover:bg-gray-700/50 hover:shadow-lg hover:shadow-purple-500/25"
                             >
                                 <span className="relative z-10 flex items-center">
                                     <FiCheckCircle className="w-6 h-6 mr-2" />
                                     Verifikasi Sertifikat
                                 </span>
-                            </a>
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -600,7 +622,7 @@ const LandingPage = () => {
 
                             <button
                                 type="submit"
-                                disabled={!contract || loading || (!certificateId && !selectedFile)}
+                                disabled={loading || (!certificateId && !selectedFile)}
                                 className={`w-full btn-primary relative transition-all ${(!contract || loading || (!certificateId && !selectedFile))
                                     ? 'opacity-50 cursor-not-allowed'
                                     : 'hover:bg-blue-600'

@@ -5,7 +5,7 @@ import { useAuth } from '../context/AuthContext';
 
 function Sidebar({ isCollapsed, onToggle }) {
     const location = useLocation();
-    const { isIssuer, isVerifier } = useAuth();
+    const { isIssuer, isVerifier, isAdmin } = useAuth();
 
     const isActive = (path) => {
         return location.pathname === path;
@@ -59,8 +59,8 @@ function Sidebar({ isCollapsed, onToggle }) {
                     }}
                 />
 
-                {/* Menu Template hanya untuk issuer */}
-                {isIssuer() && (
+                {/* Menu Template untuk issuer dan admin */}
+                {(isIssuer() || isAdmin()) && (
                     <SidebarButton
                         props={{
                             text: 'Template',
@@ -72,8 +72,8 @@ function Sidebar({ isCollapsed, onToggle }) {
                     />
                 )}
 
-                {/* Menu untuk issuer dan verifier */}
-                {(isIssuer() || isVerifier()) && (
+                {/* Menu untuk issuer, admin, dan verifier */}
+                {(isIssuer() || isVerifier() || isAdmin()) && (
                     <SidebarButton
                         props={{
                             text: 'Verifikasi Sertifikat',
@@ -95,6 +95,19 @@ function Sidebar({ isCollapsed, onToggle }) {
                         isCollapsed
                     }}
                 />
+
+                {/* Menu Manajemen User untuk admin */}
+                {isAdmin() && (
+                    <SidebarButton
+                        props={{
+                            text: 'Manajemen User',
+                            icon: 'users',
+                            link: '/dashboard/users',
+                            isActive: isActive('/dashboard/users'),
+                            isCollapsed
+                        }}
+                    />
+                )}
 
                 <div className={`${isCollapsed ? 'px-2' : 'px-4'} mt-6`}>
                     <div className="h-px bg-gradient-to-r from-transparent via-blue-700 to-transparent"></div>

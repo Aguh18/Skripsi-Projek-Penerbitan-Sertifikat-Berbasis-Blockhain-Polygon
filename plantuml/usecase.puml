@@ -1,0 +1,15 @@
+@startuml
+left to right direction
+actor Admin
+actor Issuer
+actor User
+
+rectangle System {
+  Admin --> (Approve Issuer)
+  Admin --> (View All Certificates)
+  Issuer --> (Upload Certificate)
+  Issuer --> (Bulk Upload Certificate)
+  Issuer --> (Publish Certificate to Blockchain)
+  User --> (View Certificate)
+}
+@enduml 

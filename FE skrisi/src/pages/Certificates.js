@@ -1,10 +1,13 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { FiPlus, FiDownload, FiEye, FiCheckCircle, FiXCircle, FiFileText } from 'react-icons/fi';
+import { FiPlus, FiDownload, FiEye, FiCheckCircle, FiXCircle, FiFileText, FiCopy } from 'react-icons/fi';
 import axios from 'axios';
 import { getEnv } from '../utils/env';
 import { toast } from 'react-toastify';
 import { useAuth } from '../context/AuthContext';
+import contractABI from '../ABI.json';
+import { BrowserProvider, Contract } from 'ethers';
+import { CONTRACTS } from '../config/network';
 
 const Certificates = () => {
     const { isIssuer, isVerifier } = useAuth();
@@ -15,6 +18,9 @@ const Certificates = () => {
     const [draftCertificates, setDraftCertificates] = useState([]);
     const [loading, setLoading] = useState(true);
     const [loadingDraft, setLoadingDraft] = useState(false);
+    const [selectedDrafts, setSelectedDrafts] = useState([]);
+    const [bulkPublishing, setBulkPublishing] = useState(false);
+    const contractAddress = CONTRACTS.certificateRegistry.address;
 
     useEffect(() => {
         if (activeTab === 'draft') {
@@ -131,6 +137,84 @@ const Certificates = () => {
         navigate(`/dashboard/issue-certificate/submit/${cert.id}`);
     };
 
+    // Helper to group certificates by template name
+    const groupByTemplate = (certs) => {
+        const groups = {};
+        certs.forEach(cert => {
+            const template = cert.certificateTitle || 'Tanpa Template';
+            if (!groups[template]) groups[template] = [];
+            groups[template].push(cert);
+        });
+        return groups;
+    };
+
+    // Helper: get all draft certificate IDs
+    const allDraftIds = draftCertificates.flatMap(group => group.certificates.map(cert => cert.id));
+    const isAllSelected = allDraftIds.length > 0 && allDraftIds.every(id => selectedDrafts.includes(id));
+
+    const handleSelectDraft = (id) => {
+        setSelectedDrafts((prev) =>
+            prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+        );
+    };
+    const handleSelectAllDrafts = () => {
+        if (isAllSelected) setSelectedDrafts([]);
+        else setSelectedDrafts(allDraftIds);
+    };
+
+    // Bulk publish handler
+    const handleBulkPublish = async () => {
+        if (selectedDrafts.length === 0) return;
+        setBulkPublishing(true);
+        try {
+            // 1. Ambil data semua sertifikat draft yang dipilih
+            const token = localStorage.getItem('token');
+            const certs = [];
+            for (const id of selectedDrafts) {
+                const res = await axios.get(`${getEnv('BASE_URL')}/api/certificate/${id}`, {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                certs.push(res.data.data);
+            }
+            // 2. Siapkan array untuk parameter bulk
+            const ids = certs.map(c => c.id);
+            const titles = certs.map(c => c.certificateTitle);
+            const expiryDates = certs.map(c => c.expiryDate || '');
+            const issueDates = certs.map(c => c.issueDate || '');
+            const cids = certs.map(c => c.ipfsCid);
+            const issuerNames = certs.map(c => c.issuerName);
+            const recipientNames = certs.map(c => c.recipientName);
+            const targetAddresses = certs.map(c => c.targetAddress);
+            // 3. Panggil contract bulk
+            if (!window.ethereum) throw new Error('MetaMask tidak terdeteksi');
+            const provider = new BrowserProvider(window.ethereum);
+            const signer = await provider.getSigner();
+            const contract = new Contract(contractAddress, contractABI, signer);
+            const tx = await contract.issueCertificatesBulk(
+                ids, titles, expiryDates, issueDates, cids, issuerNames, recipientNames, targetAddresses,
+                { gasLimit: 5000000 }
+            );
+            await tx.wait();
+            // Update status di backend
+            await axios.post(
+                `${getEnv('BASE_URL')}/api/certificate/set-status`,
+                { ids, status: 'ACTIVE' },
+                { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }
+            );
+            toast.success('Bulk terbitkan ke blockchain & update status sukses!');
+            setSelectedDrafts([]);
+        } catch (err) {
+            toast.error('Bulk terbitkan gagal! ' + (err?.message || ''));
+        }
+        setBulkPublishing(false);
+    };
+
+    // Copy to clipboard helper
+    const handleCopyId = (id) => {
+        navigator.clipboard.writeText(id);
+        toast.success('ID berhasil disalin!');
+    };
+
     return (
         <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 overflow-hidden relative animate-fade-in">
             {/* Space Background Effects */}
@@ -192,147 +276,183 @@ const Certificates = () => {
                     </div>
                 </div>
                 {activeTab === 'draft' ? (
-                    <div className="space-y-8">
+                    <div>
                         {loadingDraft ? (
-                            <div className="text-center py-8 text-gray-400">Memuat data draft...</div>
+                            <div className="card bg-gray-800/30 p-8 text-center text-gray-400">Memuat data draft...</div>
                         ) : draftCertificates.length === 0 ? (
-                            <div className="text-center py-8 text-gray-400">Belum ada sertifikat draft</div>
+                            <div className="card bg-gray-800/30 p-8 text-center text-gray-400">Belum ada sertifikat draft</div>
                         ) : (
-                            draftCertificates.map((group) => (
-                                <div key={group.template.id} className="bg-white/5 rounded-lg shadow-md p-6">
-                                    <div className="flex items-center justify-between mb-4">
-                                        <h2 className="text-xl font-semibold text-white flex items-center"><FiFileText className="mr-2" />{group.template.name}</h2>
-                                        <span className="text-sm text-gray-300">
-                                            {group.certificates.length} sertifikat
-                                        </span>
-                                    </div>
-                                    <div className="overflow-x-auto">
-                                        <table className="min-w-full divide-y divide-gray-700/30">
-                                            <thead className="bg-gray-800/50">
-                                                <tr>
-                                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Penerima</th>
-                                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Tanggal Dibuat</th>
-                                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Aksi</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody className="bg-white/5 divide-y divide-gray-700/30">
-                                                {group.certificates.map((cert) => (
-                                                    <tr key={cert.id}>
-                                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-200">
-                                                            <div className="font-medium">{cert.recipient.name}</div>
-                                                            <div className="text-xs text-gray-400">{cert.recipient.walletAddress}</div>
-                                                        </td>
-                                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-200">
-                                                            {new Date(cert.createdAt).toLocaleDateString()}
-                                                        </td>
-                                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                                            <Link
-                                                                to={`/certificates/${cert.id}`}
-                                                                className="text-blue-400 hover:text-blue-600 mr-4"
-                                                            >
-                                                                Lihat
-                                                            </Link>
-                                                            <button
-                                                                onClick={() => handlePublishCertificate(cert)}
-                                                                className="text-green-400 hover:text-green-600"
-                                                            >
-                                                                Terbitkan
-                                                            </button>
-                                                        </td>
-                                                    </tr>
-                                                ))}
-                                            </tbody>
-                                        </table>
-                                    </div>
+                            <>
+                                <div className="flex justify-end mb-4">
+                                    <button
+                                        className="btn-primary px-6 py-2 rounded-lg"
+                                        disabled={selectedDrafts.length === 0 || bulkPublishing}
+                                        onClick={handleBulkPublish}
+                                    >
+                                        {bulkPublishing ? 'Menerbitkan...' : `Bulk Terbitkan (${selectedDrafts.length})`}
+                                    </button>
                                 </div>
-                            ))
+                                {draftCertificates.map((group) => (
+                                    <div key={group.template.id} className="mb-8">
+                                        <h2 className="text-lg font-bold text-blue-400 mb-2">{group.template.name}</h2>
+                                        <div className="card overflow-hidden bg-gray-800/30 backdrop-blur-sm border border-gray-700/30 rounded-2xl shadow-xl hover:border-blue-500/50 transition-all duration-300">
+                                            <div className="overflow-x-auto">
+                                                <table className="min-w-full divide-y divide-gray-700/30">
+                                                    <thead className="bg-gray-800/50">
+                                                        <tr>
+                                                            <th className="px-4 py-3 text-center">
+                                                                <input
+                                                                    type="checkbox"
+                                                                    checked={isAllSelected}
+                                                                    onChange={handleSelectAllDrafts}
+                                                                />
+                                                            </th>
+                                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">ID Sertifikat</th>
+                                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Penerima</th>
+                                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Tanggal Dibuat</th>
+                                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Aksi</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody className="divide-y divide-gray-700/30">
+                                                        {group.certificates.map((cert) => (
+                                                            <tr key={cert.id} className="hover:bg-blue-900/20 transition-colors">
+                                                                <td className="px-4 py-4 text-center">
+                                                                    <input
+                                                                        type="checkbox"
+                                                                        checked={selectedDrafts.includes(cert.id)}
+                                                                        onChange={() => handleSelectDraft(cert.id)}
+                                                                    />
+                                                                </td>
+                                                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-300 flex items-center gap-2">
+                                                                    {cert.id.substring(0, 10)}...
+                                                                    <button onClick={() => handleCopyId(cert.id)} className="ml-2 text-gray-400 hover:text-blue-400" title="Copy ID">
+                                                                        <FiCopy className="w-4 h-4" />
+                                                                    </button>
+                                                                </td>
+                                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
+                                                                    <div className="font-medium">{cert.recipient?.name || '-'}</div>
+                                                                    <div className="text-xs text-gray-400">{cert.recipient?.walletAddress || '-'}</div>
+                                                                </td>
+                                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">{new Date(cert.createdAt).toLocaleDateString('id-ID')}</td>
+                                                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                                                    <Link
+                                                                        to={`/certificates/${cert.id}`}
+                                                                        className="text-blue-400 hover:text-blue-600 mr-4"
+                                                                    >
+                                                                        Lihat
+                                                                    </Link>
+                                                                    <button
+                                                                        onClick={() => handlePublishCertificate(cert)}
+                                                                        className="text-green-400 hover:text-green-600"
+                                                                    >
+                                                                        Terbitkan
+                                                                    </button>
+                                                                </td>
+                                                            </tr>
+                                                        ))}
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </>
                         )}
                     </div>
                 ) : (
-                    <div className="card overflow-hidden bg-gray-800/30 backdrop-blur-sm border border-gray-700/30 rounded-2xl shadow-xl hover:border-blue-500/50 transition-all duration-300">
-                        <div className="overflow-x-auto">
-                            <table className="min-w-full divide-y divide-gray-700/30">
-                                <thead className="bg-gray-800/50">
-                                    <tr>
-                                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
-                                            ID Sertifikat
-                                        </th>
-                                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
-                                            {activeTab === 'issued' ? 'Penerima' : 'Penerbit'}
-                                        </th>
-                                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
-                                            Judul
-                                        </th>
-                                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
-                                            Tanggal Terbit
-                                        </th>
-                                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
-                                            Tanggal Kedaluwarsa
-                                        </th>
-                                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
-                                            Status
-                                        </th>
-                                        <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-400 uppercase tracking-wider">
-                                            Aksi
-                                        </th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-gray-700/30">
-                                    {loading ? (
-                                        <tr>
-                                            <td colSpan="7" className="px-6 py-4 text-center text-gray-400">
-                                                Memuat data...
-                                            </td>
-                                        </tr>
-                                    ) : (activeTab === 'issued' ? issuedCertificates : receivedCertificates).length === 0 ? (
-                                        <tr>
-                                            <td colSpan="7" className="px-6 py-4 text-center text-gray-400">
-                                                Tidak ada sertifikat
-                                            </td>
-                                        </tr>
-                                    ) : (
-                                        (activeTab === 'issued' ? issuedCertificates : receivedCertificates).map((cert) => (
-                                            <tr key={cert.id} className="hover:bg-blue-900/20 transition-colors">
-                                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-300">
-                                                    {cert.id.substring(0, 10)}...
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
-                                                    {activeTab === 'issued' ? cert.recipientName : cert.issuerName}
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
-                                                    {cert.certificateTitle}
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
-                                                    {new Date(cert.issueDate).toLocaleDateString('id-ID')}
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
-                                                    {cert.expiryDate ? new Date(cert.expiryDate).toLocaleDateString('id-ID') : '-'}
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap">
-                                                    {getStatusBadge(cert.status)}
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                                    <div className="flex justify-end space-x-2">
-                                                        <button
-                                                            onClick={() => handleView(cert)}
-                                                            className="text-gray-400 hover:text-blue-400 transition-colors"
-                                                        >
-                                                            <FiEye className="w-5 h-5" />
-                                                        </button>
-                                                        <button
-                                                            onClick={() => handleDownload(cert)}
-                                                            className="text-gray-400 hover:text-blue-400 transition-colors"
-                                                        >
-                                                            <FiDownload className="w-5 h-5" />
-                                                        </button>
-                                                    </div>
-                                                </td>
+                    <div>
+                        {loading ? (
+                            <div className="card bg-gray-800/30 p-8 text-center text-gray-400">Memuat data...</div>
+                        ) : (activeTab === 'issued' ? issuedCertificates : receivedCertificates).length === 0 ? (
+                            <div className="card bg-gray-800/30 p-8 text-center text-gray-400">Tidak ada sertifikat</div>
+                        ) : activeTab === 'issued' ? (
+                            Object.entries(groupByTemplate(issuedCertificates)).map(([template, certs]) => (
+                                <div key={template} className="mb-8">
+                                    <h2 className="text-lg font-bold text-blue-400 mb-2">{template}</h2>
+                                    <div className="card overflow-hidden bg-gray-800/30 backdrop-blur-sm border border-gray-700/30 rounded-2xl shadow-xl hover:border-blue-500/50 transition-all duration-300">
+                                        <div className="overflow-x-auto">
+                                            <table className="min-w-full divide-y divide-gray-700/30">
+                                                <thead className="bg-gray-800/50">
+                                                    <tr>
+                                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">ID Sertifikat</th>
+                                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Penerima</th>
+                                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Judul</th>
+                                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Tanggal Terbit</th>
+                                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Tanggal Kedaluwarsa</th>
+                                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Status</th>
+                                                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-400 uppercase tracking-wider">Aksi</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody className="divide-y divide-gray-700/30">
+                                                    {certs.map((cert) => (
+                                                        <tr key={cert.id} className="hover:bg-blue-900/20 transition-colors">
+                                                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-300 flex items-center gap-2">
+                                                                {cert.id.substring(0, 10)}...
+                                                                <button onClick={() => handleCopyId(cert.id)} className="ml-2 text-gray-400 hover:text-blue-400" title="Copy ID">
+                                                                    <FiCopy className="w-4 h-4" />
+                                                                </button>
+                                                            </td>
+                                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">{cert.recipientName}</td>
+                                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">{cert.certificateTitle}</td>
+                                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">{new Date(cert.issueDate).toLocaleDateString('id-ID')}</td>
+                                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">{cert.expiryDate ? new Date(cert.expiryDate).toLocaleDateString('id-ID') : '-'}</td>
+                                                            <td className="px-6 py-4 whitespace-nowrap">{getStatusBadge(cert.status)}</td>
+                                                            <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                                                <div className="flex justify-end space-x-2">
+                                                                    <button onClick={() => handleView(cert)} className="text-gray-400 hover:text-blue-400 transition-colors"><FiEye className="w-5 h-5" /></button>
+                                                                    <button onClick={() => handleDownload(cert)} className="text-gray-400 hover:text-blue-400 transition-colors"><FiDownload className="w-5 h-5" /></button>
+                                                                </div>
+                                                            </td>
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))
+                        ) : (
+                            <div className="card overflow-hidden bg-gray-800/30 backdrop-blur-sm border border-gray-700/30 rounded-2xl shadow-xl hover:border-blue-500/50 transition-all duration-300">
+                                <div className="overflow-x-auto">
+                                    <table className="min-w-full divide-y divide-gray-700/30">
+                                        <thead className="bg-gray-800/50">
+                                            <tr>
+                                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">ID Sertifikat</th>
+                                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Penerbit</th>
+                                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Judul</th>
+                                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Tanggal Terbit</th>
+                                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Tanggal Kedaluwarsa</th>
+                                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Status</th>
+                                                <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-400 uppercase tracking-wider">Aksi</th>
                                             </tr>
-                                        ))
-                                    )}
-                                </tbody>
-                            </table>
-                        </div>
+                                        </thead>
+                                        <tbody className="divide-y divide-gray-700/30">
+                                            {receivedCertificates.map((cert) => (
+                                                <tr key={cert.id} className="hover:bg-blue-900/20 transition-colors">
+                                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-300 flex items-center gap-2">
+                                                        {cert.id.substring(0, 10)}...
+                                                        <button onClick={() => handleCopyId(cert.id)} className="ml-2 text-gray-400 hover:text-blue-400" title="Copy ID">
+                                                            <FiCopy className="w-4 h-4" />
+                                                        </button>
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">{cert.issuerName}</td>
+                                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">{cert.certificateTitle}</td>
+                                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">{new Date(cert.issueDate).toLocaleDateString('id-ID')}</td>
+                                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">{cert.expiryDate ? new Date(cert.expiryDate).toLocaleDateString('id-ID') : '-'}</td>
+                                                    <td className="px-6 py-4 whitespace-nowrap">{getStatusBadge(cert.status)}</td>
+                                                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                                        <div className="flex justify-end space-x-2">
+                                                            <button onClick={() => handleView(cert)} className="text-gray-400 hover:text-blue-400 transition-colors"><FiEye className="w-5 h-5" /></button>
+                                                            <button onClick={() => handleDownload(cert)} className="text-gray-400 hover:text-blue-400 transition-colors"><FiDownload className="w-5 h-5" /></button>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 )}
             </div>

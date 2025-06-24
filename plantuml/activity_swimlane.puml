@@ -1,0 +1,26 @@
+@startuml
+|Admin|
+start
+:Login;
+:Approve Issuer;
+:View All Certificates;
+end
+
+|Issuer|
+start
+:Login;
+:Upload Certificate (Single/Bulk);
+:Manage Draft Certificates;
+:Publish to Blockchain;
+end
+
+|User|
+start
+:Login;
+:View Certificate;
+:Verify Certificate;
+end
+
+note across
+Fitur verifikasi sertifikat ke blockchain dapat diakses oleh semua role, termasuk user yang tidak login.
+@enduml 

@@ -621,4 +621,88 @@ const getCertificateById = async (req, res) => {
   }
 };
 
-module.exports = { create, issueCertificate, verifyCertificate, uploadTemplateHandler, getTemplateHandler, getCertificatesByTargetAddress, getCertificatesByIssuerAddress, deleteTemplateHandler, getDraftCertificatesByTemplate, setCertificateStatus, getCertificateById };
+const bulkGenerateCertificates = async (req, res) => {
+  const { certificates } = req.body;
+  if (!Array.isArray(certificates) || certificates.length === 0) {
+    return res.status(StatusCodes.BAD_REQUEST).json({
+      success: false,
+      message: 'No certificates provided',
+      data: {},
+    });
+  }
+  const userData = decodeToken(req.headers.authorization);
+  const results = [];
+  for (const cert of certificates) {
+    try {
+      // You may want to validate cert fields here
+      const template = await prisma.template.findUnique({
+        where: { id: cert.template },
+        include: { user: true }
+      });
+      if (!template) throw new Error('Template not found');
+      const recipient = await prisma.user.upsert({
+        where: { walletAddress: cert.targetAddress },
+        update: {},
+        create: {
+          walletAddress: cert.targetAddress,
+          name: cert.recipientName,
+          createdAt: new Date()
+        }
+      });
+      const result = await generateCertificateFromTemplate({
+        template,
+        recipientName: cert.recipientName,
+        issueDate: cert.issueDate,
+        expiryDate: cert.expiryDate,
+        targetAddress: cert.targetAddress
+      });
+      const filePath = path.join(__dirname, '..', 'certificates', result.filePath);
+      if (!fsSync.existsSync(filePath)) throw new Error(`File not found: ${filePath}`);
+      await fs.access(filePath, fs.constants.R_OK);
+      const fileContent = await fs.readFile(filePath);
+      const fileName = path.basename(filePath);
+      const storageClient = PinataStorageClient.getInstance();
+      await storageClient.initialize();
+      const cid = await storageClient.uploadLargeFile(fileContent, fileName, 'application/pdf');
+      const certificateId = keccak256(fileContent);
+      const certificate = await prisma.certificate.create({
+        data: {
+          id: certificateId,
+          templateId: cert.template,
+          recipientName: cert.recipientName,
+          certificateTitle: template.name,
+          issueDate: new Date(cert.issueDate),
+          expiryDate: cert.expiryDate ? new Date(cert.expiryDate) : null,
+          issuerName: userData.name || userData.walletAddress,
+          targetAddress: cert.targetAddress,
+          issuerAddress: userData.walletAddress,
+          ipfsCid: cid,
+          filePath: `https://gateway.pinata.cloud/ipfs/${cid}`,
+          status: 'DRAFT'
+        }
+      });
+      results.push({ success: true, id: certificateId, recipient: cert.recipientName });
+    } catch (err) {
+      results.push({ success: false, error: err.message, recipient: cert.recipientName });
+    }
+  }
+  res.status(StatusCodes.OK).json({
+    success: true,
+    message: 'Bulk certificate generation completed',
+    results
+  });
+};
+
+const setCertificateStatusBulk = async (req, res) => {
+  const { ids, status } = req.body;
+  if (!Array.isArray(ids) || !status) {
+    return res.status(400).json({ success: false, message: "Invalid input" });
+  }
+  await prisma.certificate.updateMany({
+    where: { id: { in: ids } },
+    data: { status }
+  });
+  res.json({ success: true });
+};
+
+module.exports = { create, issueCertificate, verifyCertificate, uploadTemplateHandler, getTemplateHandler, getCertificatesByTargetAddress, getCertificatesByIssuerAddress, deleteTemplateHandler, getDraftCertificatesByTemplate, setCertificateStatus, getCertificateById, bulkGenerateCertificates, setCertificateStatusBulk };

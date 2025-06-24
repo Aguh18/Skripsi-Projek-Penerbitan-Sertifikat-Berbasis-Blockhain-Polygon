@@ -5,6 +5,7 @@ import { getEnv } from '../utils/env';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { useAuth } from '../context/AuthContext';
+import * as XLSX from 'xlsx';
 
 const LoadingOverlay = () => (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center">
@@ -31,6 +32,9 @@ const IssueCertificate = () => {
     const [errors, setErrors] = useState({});
     const navigate = useNavigate();
     const { isIssuer } = useAuth();
+    const [bulkExcelData, setBulkExcelData] = useState([]);
+    const [bulkUploading, setBulkUploading] = useState(false);
+    const [mode, setMode] = useState('single'); // 'single' or 'bulk'
 
     useEffect(() => {
         if (!isIssuer()) {
@@ -160,6 +164,51 @@ const IssueCertificate = () => {
         }
     };
 
+    // Bulk upload handlers
+    const handleBulkFileUpload = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (evt) => {
+            const bstr = evt.target.result;
+            const wb = XLSX.read(bstr, { type: 'binary' });
+            const wsname = wb.SheetNames[0];
+            const ws = wb.Sheets[wsname];
+            const data = XLSX.utils.sheet_to_json(ws, { header: 1 });
+            const headers = data[0];
+            const rows = data.slice(1).map(row =>
+                Object.fromEntries(headers.map((h, i) => [h, row[i]]))
+            );
+            setBulkExcelData(rows);
+        };
+        reader.readAsBinaryString(file);
+    };
+
+    const handleBulkSubmit = async (e) => {
+        e.preventDefault();
+        setBulkUploading(true);
+        try {
+            // Inject template, issueDate, expiryDate from form to each row
+            const bulkData = bulkExcelData.map(row => ({
+                ...row,
+                template: formData.template,
+                issueDate: formData.issueDate,
+                expiryDate: formData.expiryDate
+            }));
+            const token = localStorage.getItem('token');
+            const res = await axios.post(
+                `${getEnv('BASE_URL')}/api/certificate/bulk-generate`,
+                { certificates: bulkData },
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+            toast.success('Bulk upload sukses!');
+            setBulkExcelData([]);
+        } catch (err) {
+            toast.error('Bulk upload gagal!');
+        }
+        setBulkUploading(false);
+    };
+
     if (loading) {
         return (
             <div className="flex items-center justify-center min-h-screen">
@@ -179,17 +228,126 @@ const IssueCertificate = () => {
                 <div className="absolute top-1/4 left-1/4 w-[500px] h-[500px] bg-gradient-to-r from-blue-500/20 via-purple-500/20 to-pink-500/20 rounded-full blur-3xl mix-blend-screen"></div>
                 <div className="absolute bottom-1/3 right-1/3 w-[600px] h-[600px] bg-gradient-to-r from-cyan-500/20 via-blue-500/20 to-purple-500/20 rounded-full blur-3xl mix-blend-screen"></div>
             </div>
-            {isSubmitting && <LoadingOverlay />}
+            {(isSubmitting || bulkUploading) && <LoadingOverlay />}
             <div className="max-w-4xl mx-auto py-16 relative z-10">
-                <h2 className="text-3xl font-bold mb-8 text-center bg-clip-text text-transparent bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400">Terbitkan Sertifikat</h2>
-                <form onSubmit={handleSubmit} className="card space-y-6 bg-gray-800/30 backdrop-blur-sm border border-gray-700/30 rounded-2xl p-8 shadow-xl hover:border-blue-500/50 transition-all duration-300">
-                    {errors.submit && (
-                        <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400">
-                            {errors.submit}
+                {/* Mode Switcher */}
+                <div className="flex justify-center mb-8 space-x-4">
+                    <button
+                        className={`px-6 py-2 rounded-lg font-semibold transition-all ${mode === 'single' ? 'bg-blue-600 text-white' : 'bg-gray-700 text-gray-300'}`}
+                        onClick={() => setMode('single')}
+                    >
+                        Single Upload
+                    </button>
+                    <button
+                        className={`px-6 py-2 rounded-lg font-semibold transition-all ${mode === 'bulk' ? 'bg-blue-600 text-white' : 'bg-gray-700 text-gray-300'}`}
+                        onClick={() => setMode('bulk')}
+                    >
+                        Bulk Upload (Excel)
+                    </button>
+                </div>
+                {/* Single Upload Form */}
+                {mode === 'single' && (
+                    <form onSubmit={handleSubmit} className="card space-y-6 bg-gray-800/30 backdrop-blur-sm border border-gray-700/30 rounded-2xl p-8 shadow-xl hover:border-blue-500/50 transition-all duration-300">
+                        {errors.submit && (
+                            <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400">
+                                {errors.submit}
+                            </div>
+                        )}
+                        <div className="space-y-4">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-300 mb-2">Template Sertifikat</label>
+                                <select
+                                    name="template"
+                                    value={formData.template}
+                                    onChange={handleChange}
+                                    className="input-field"
+                                    required
+                                >
+                                    <option value="">Pilih Template</option>
+                                    {templateName.map((template) => (
+                                        <option key={template.id} value={template.id}>
+                                            {template.name}
+                                        </option>
+                                    ))}
+                                </select>
+                                {errors.template && <p className="text-red-400 text-sm mt-1">{errors.template}</p>}
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-300 mb-2">Nama Penerima</label>
+                                <input
+                                    type="text"
+                                    name="recipientName"
+                                    value={formData.recipientName}
+                                    onChange={handleChange}
+                                    className="input-field"
+                                    required
+                                />
+                                {errors.recipientName && (
+                                    <p className="text-red-400 text-sm mt-1">{errors.recipientName}</p>
+                                )}
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-300 mb-2">Tanggal Penerbitan</label>
+                                    <input
+                                        type="date"
+                                        name="issueDate"
+                                        value={formData.issueDate}
+                                        onChange={handleChange}
+                                        className="input-field"
+                                        required
+                                    />
+                                    {errors.issueDate && (
+                                        <p className="text-red-400 text-sm mt-1">{errors.issueDate}</p>
+                                    )}
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                                        Tanggal Kadaluarsa (Opsional)
+                                    </label>
+                                    <input
+                                        type="date"
+                                        name="expiryDate"
+                                        value={formData.expiryDate}
+                                        onChange={handleChange}
+                                        className="input-field"
+                                        min={formData.issueDate}
+                                    />
+                                    {errors.expiryDate && (
+                                        <p className="text-red-400 text-sm mt-1">{errors.expiryDate}</p>
+                                    )}
+                                </div>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-300 mb-2">Alamat Target</label>
+                                <input
+                                    type="text"
+                                    name="targetAddress"
+                                    value={formData.targetAddress}
+                                    onChange={handleChange}
+                                    className="input-field"
+                                    placeholder="0x..."
+                                    required
+                                />
+                                {errors.targetAddress && (
+                                    <p className="text-red-400 text-sm mt-1">{errors.targetAddress}</p>
+                                )}
+                            </div>
+                            <button
+                                type="submit"
+                                disabled={isSubmitting}
+                                className="w-full btn-primary group relative bg-gradient-to-r from-blue-600 to-purple-600 text-white px-8 py-4 rounded-lg transition-all duration-300 flex items-center justify-center space-x-2 overflow-hidden hover:shadow-lg hover:shadow-blue-500/25"
+                            >
+                                {isSubmitting ? 'Memproses...' : 'Terbitkan Sertifikat'}
+                            </button>
                         </div>
-                    )}
-                    <div className="space-y-4">
-                        <div>
+                    </form>
+                )}
+                {/* Bulk Upload Section */}
+                {mode === 'bulk' && (
+                    <form onSubmit={handleBulkSubmit} className="card bg-gray-800/30 backdrop-blur-sm border border-gray-700/30 rounded-2xl p-8 shadow-xl">
+                        <h3 className="text-xl font-bold mb-4 text-blue-400">Bulk Upload Sertifikat (Excel)</h3>
+                        <div className="mb-4">
                             <label className="block text-sm font-medium text-gray-300 mb-2">Template Sertifikat</label>
                             <select
                                 name="template"
@@ -205,23 +363,8 @@ const IssueCertificate = () => {
                                     </option>
                                 ))}
                             </select>
-                            {errors.template && <p className="text-red-400 text-sm mt-1">{errors.template}</p>}
                         </div>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-300 mb-2">Nama Penerima</label>
-                            <input
-                                type="text"
-                                name="recipientName"
-                                value={formData.recipientName}
-                                onChange={handleChange}
-                                className="input-field"
-                                required
-                            />
-                            {errors.recipientName && (
-                                <p className="text-red-400 text-sm mt-1">{errors.recipientName}</p>
-                            )}
-                        </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                             <div>
                                 <label className="block text-sm font-medium text-gray-300 mb-2">Tanggal Penerbitan</label>
                                 <input
@@ -232,9 +375,6 @@ const IssueCertificate = () => {
                                     className="input-field"
                                     required
                                 />
-                                {errors.issueDate && (
-                                    <p className="text-red-400 text-sm mt-1">{errors.issueDate}</p>
-                                )}
                             </div>
                             <div>
                                 <label className="block text-sm font-medium text-gray-300 mb-2">
@@ -248,35 +388,42 @@ const IssueCertificate = () => {
                                     className="input-field"
                                     min={formData.issueDate}
                                 />
-                                {errors.expiryDate && (
-                                    <p className="text-red-400 text-sm mt-1">{errors.expiryDate}</p>
-                                )}
                             </div>
                         </div>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-300 mb-2">Alamat Target</label>
-                            <input
-                                type="text"
-                                name="targetAddress"
-                                value={formData.targetAddress}
-                                onChange={handleChange}
-                                className="input-field"
-                                placeholder="0x..."
-                                required
-                            />
-                            {errors.targetAddress && (
-                                <p className="text-red-400 text-sm mt-1">{errors.targetAddress}</p>
-                            )}
+                        <input type="file" accept=".xlsx,.xls,.csv" onChange={handleBulkFileUpload} className="mb-4" />
+                        {bulkExcelData.length > 0 && (
+                            <>
+                                <button type="submit" disabled={bulkUploading} className="btn-primary px-6 py-2 rounded-lg mb-4">
+                                    {bulkUploading ? 'Uploading...' : 'Submit Bulk'}
+                                </button>
+                                <div className="overflow-x-auto max-h-64 border border-gray-700/30 rounded-lg bg-gray-900/50">
+                                    <table className="min-w-full text-xs text-gray-300">
+                                        <thead>
+                                            <tr>
+                                                {Object.keys(bulkExcelData[0]).map((h) => (
+                                                    <th key={h} className="px-2 py-1 border-b border-gray-700/30">{h}</th>
+                                                ))}
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {bulkExcelData.map((row, i) => (
+                                                <tr key={i}>
+                                                    {Object.values(row).map((v, j) => (
+                                                        <td key={j} className="px-2 py-1 border-b border-gray-700/30">{v}</td>
+                                                    ))}
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </>
+                        )}
+                        <div className="mt-4 text-gray-400 text-xs">
+                            <b>Format Excel:</b> Kolom <code>recipientName</code> dan <code>targetAddress</code> wajib diisi di file Excel.<br />
+                            Kolom <code>template</code>, <code>issueDate</code>, <code>expiryDate</code> akan diambil dari form di atas dan otomatis diisi ke setiap baris saat upload.
                         </div>
-                        <button
-                            type="submit"
-                            disabled={isSubmitting}
-                            className="w-full btn-primary group relative bg-gradient-to-r from-blue-600 to-purple-600 text-white px-8 py-4 rounded-lg transition-all duration-300 flex items-center justify-center space-x-2 overflow-hidden hover:shadow-lg hover:shadow-blue-500/25"
-                        >
-                            {isSubmitting ? 'Memproses...' : 'Terbitkan Sertifikat'}
-                        </button>
-                    </div>
-                </form>
+                    </form>
+                )}
             </div>
         </div>
     );

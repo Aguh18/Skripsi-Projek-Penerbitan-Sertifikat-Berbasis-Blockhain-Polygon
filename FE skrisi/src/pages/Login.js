@@ -15,7 +15,7 @@ function Login() {
     const [walletType, setWalletType] = useState(null);
     const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
     const navigate = useNavigate();
-    const { login, logout } = useAuth();
+    const { login, logout, user } = useAuth();
 
     useEffect(() => {
         const handleMouseMove = (e) => {
@@ -28,6 +28,15 @@ function Login() {
         window.addEventListener('mousemove', handleMouseMove);
         return () => window.removeEventListener('mousemove', handleMouseMove);
     }, []);
+
+    useEffect(() => {
+        // Jika sudah login, redirect ke dashboard
+        const token = localStorage.getItem('token');
+        const userProfile = localStorage.getItem('userProfile');
+        if ((token && userProfile) || user) {
+            navigate('/dashboard');
+        }
+    }, [navigate, user]);
 
     const calculateParallax = (base, factor) => {
         const x = (mousePosition.x - window.innerWidth / 2) * factor;

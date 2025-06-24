@@ -3,11 +3,17 @@ import axios from 'axios';
 import { getEnv } from '../utils/env';
 import { toast } from 'react-toastify';
 import { UserCircleIcon } from '@heroicons/react/24/outline';
+import { useAuth } from '../context/AuthContext';
 
 const Settings = () => {
     const [profile, setProfile] = useState({ name: '', email: '' });
     const [profileLoading, setProfileLoading] = useState(true);
     const [profileSaving, setProfileSaving] = useState(false);
+    const { user, isVerifier } = useAuth();
+    const [issuerReason, setIssuerReason] = useState('');
+    const [issuerSubmitting, setIssuerSubmitting] = useState(false);
+    const [issuerStatus, setIssuerStatus] = useState(null); // null | 'PENDING' | 'APPROVED' | 'REJECTED'
+    const [issuerLoading, setIssuerLoading] = useState(false);
 
     useEffect(() => {
         const fetchProfile = async () => {
@@ -30,6 +36,29 @@ const Settings = () => {
         fetchProfile();
     }, []);
 
+    useEffect(() => {
+        // Cek status pengajuan issuer
+        const fetchIssuerStatus = async () => {
+            if (!isVerifier()) return;
+            setIssuerLoading(true);
+            try {
+                const token = localStorage.getItem('token');
+                const res = await axios.get(`${getEnv('BASE_URL')}/api/account/issuer-application`, {
+                    headers: { Authorization: `Bearer ${token}` },
+                });
+                // Cari pengajuan milik user saat ini dengan status PENDING
+                const myApp = res.data.data.find(app => app.userId === user.walletAddress && app.status === 'PENDING');
+                if (myApp) setIssuerStatus('PENDING');
+                else setIssuerStatus(null);
+            } catch (err) {
+                setIssuerStatus(null);
+            } finally {
+                setIssuerLoading(false);
+            }
+        };
+        fetchIssuerStatus();
+    }, [isVerifier, user]);
+
     const handleProfileChange = (e) => {
         setProfile({ ...profile, [e.target.name]: e.target.value });
     };
@@ -50,6 +79,29 @@ const Settings = () => {
         } finally {
             setProfileSaving(false);
         }
+    };
+
+    const handleIssuerSubmit = async (e) => {
+        e.preventDefault();
+        if (!issuerReason.trim()) {
+            toast.error('Alasan pengajuan wajib diisi');
+            return;
+        }
+        setIssuerSubmitting(true);
+        try {
+            const token = localStorage.getItem('token');
+            await axios.post(
+                `${getEnv('BASE_URL')}/api/account/issuer-application`,
+                { name: profile.name, email: profile.email, reason: issuerReason },
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+            toast.success('Pengajuan issuer berhasil dikirim! Menunggu persetujuan admin.');
+            setIssuerStatus('PENDING');
+            setIssuerReason('');
+        } catch (err) {
+            toast.error(err.response?.data?.message || 'Gagal mengirim pengajuan');
+        }
+        setIssuerSubmitting(false);
     };
 
     return (
@@ -105,6 +157,57 @@ const Settings = () => {
                         </button>
                     </form>
                 </div>
+                {/* Pengajuan Issuer - hanya untuk verifier */}
+                {isVerifier() && (
+                    <div className="card mb-6 bg-gray-800/30 backdrop-blur-sm border border-green-700/30 rounded-2xl p-8 shadow-xl hover:border-green-500/50 transition-all duration-300">
+                        <h2 className="text-lg font-semibold text-green-400 mb-4">Ajukan Diri Sebagai Issuer</h2>
+                        {issuerLoading ? (
+                            <div className="text-gray-400">Memuat status pengajuan...</div>
+                        ) : issuerStatus === 'PENDING' ? (
+                            <div className="p-4 bg-yellow-900/20 border border-yellow-500/30 rounded-lg text-yellow-300 text-center font-semibold">
+                                Status: <span className="uppercase">Waiting for Approval</span>
+                            </div>
+                        ) : (
+                            <form className="space-y-4" onSubmit={handleIssuerSubmit}>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-400 mb-2">Nama Lengkap</label>
+                                    <input
+                                        type="text"
+                                        value={profile.name}
+                                        className="input-field"
+                                        disabled
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-400 mb-2">Email</label>
+                                    <input
+                                        type="email"
+                                        value={profile.email}
+                                        className="input-field"
+                                        disabled
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-400 mb-2">Alasan Pengajuan</label>
+                                    <textarea
+                                        className="input-field min-h-[80px]"
+                                        placeholder="Jelaskan mengapa Anda ingin menjadi issuer..."
+                                        value={issuerReason}
+                                        onChange={e => setIssuerReason(e.target.value)}
+                                        required
+                                    />
+                                </div>
+                                <button
+                                    type="submit"
+                                    className="btn-primary group relative bg-gradient-to-r from-green-600 to-blue-600 text-white px-8 py-4 rounded-lg transition-all duration-300 flex items-center justify-center space-x-2 overflow-hidden hover:shadow-lg hover:shadow-green-500/25"
+                                    disabled={issuerSubmitting}
+                                >
+                                    {issuerSubmitting ? 'Mengirim...' : 'Ajukan Sekarang'}
+                                </button>
+                            </form>
+                        )}
+                    </div>
+                )}
             </div>
         </div>
     );

@@ -3,7 +3,7 @@ import { Navigate, Outlet } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 const ProtectedRoute = ({ children, allowedRoles }) => {
-    const { user, isIssuer, isVerifier } = useAuth();
+    const { user, isIssuer, isVerifier, isAdmin } = useAuth();
 
     if (!user) {
         return <Navigate to="/login" replace />;
@@ -11,6 +11,7 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
 
     if (allowedRoles) {
         const hasRequiredRole = allowedRoles.some(role => {
+            if (role === 'admin') return isAdmin();
             if (role === 'issuer') return isIssuer();
             if (role === 'verifier') return isVerifier();
             if (role === 'issuer_or_verifier') return isIssuer() || isVerifier();
