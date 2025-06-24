@@ -1,15 +1,39 @@
 @startuml
 left to right direction
-actor Admin
-actor Issuer
-actor User
+actor Verifier
+actor Guest
 
 rectangle System {
-  Admin --> (Approve Issuer)
-  Admin --> (View All Certificates)
-  Issuer --> (Upload Certificate)
-  Issuer --> (Bulk Upload Certificate)
-  Issuer --> (Publish Certificate to Blockchain)
-  User --> (View Certificate)
+  (User Management) as UC_UserManagement
+  (Upload Certificate) as UC_Upload
+  (Bulk Upload Certificate) as UC_BulkUpload
+  (Manage Draft) as UC_Draft
+  (Publish Certificate to Blockchain) as UC_Publish
+  (View All Certificates) as UC_ViewAll
+  (View Certificates) as UC_View
+  (Verify Certificate) as UC_Verify
+
+  Admin --> UC_UserManagement
+  Admin --> UC_Upload
+  Admin --> UC_BulkUpload
+  Admin --> UC_Draft
+  Admin --> UC_Publish
+  Admin --> UC_ViewAll
+  Admin --> UC_Verify
+
+  Issuer --> UC_Upload
+  Issuer --> UC_BulkUpload
+  Issuer --> UC_Draft
+  Issuer --> UC_Publish
+  Issuer --> UC_ViewAll
+  Issuer --> UC_Verify
+
+  Verifier --> UC_View
+  Verifier --> UC_Verify
+
+  Guest --> UC_Verify
 }
+
+actor Admin
+actor Issuer
 @enduml 

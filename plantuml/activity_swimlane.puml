@@ -21,6 +21,9 @@ start
 :Verify Certificate;
 end
 
-note across
-Fitur verifikasi sertifikat ke blockchain dapat diakses oleh semua role, termasuk user yang tidak login.
+|Guest|
+start
+:Access Landing Page;
+:Verify Certificate;
+end
 @enduml 

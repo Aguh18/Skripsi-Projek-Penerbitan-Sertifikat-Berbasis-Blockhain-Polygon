@@ -1,0 +1,17 @@
+@startuml
+start
+:Issuer membuka aplikasi;
+:Login via MetaMask;
+if (Login sukses?) then (ya)
+  :Upload sertifikat (single/bulk);
+  :Simpan draft di DB;
+  :Kelola draft;
+  :Publish ke blockchain;
+  :Lihat sertifikat diterbitkan;
+  :Lihat semua sertifikat;
+  :Verifikasi sertifikat;
+else (tidak)
+  :Tampilkan error login;
+endif
+stop
+@enduml 

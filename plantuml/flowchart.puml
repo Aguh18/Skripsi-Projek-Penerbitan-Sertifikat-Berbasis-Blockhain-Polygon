@@ -1,29 +1,39 @@
 @startuml
 start
-:User membuka aplikasi;
-:Login;
-if (Login sukses?) then (ya)
-  if (Role = Admin?) then (ya)
-    :Lihat permintaan issuer;
-    if (Approve issuer?) then (ya)
-      :Tambah issuer ke blockchain;
-      :Update status user di DB;
+:User membuka aplikasi (Landing Page);
+if (Verifikasi sertifikat?) then (ya)
+  :Verifikasi sertifikat (tanpa login);
+endif
+if (Login?) then (ya)
+  :Login via MetaMask;
+  if (Login sukses?) then (ya)
+    if (Role = Verifier?) then (ya)
+      :Kirim permohonan menjadi issuer;
+      if (Disetujui admin?) then (ya)
+        :Akses fitur Issuer;
+      else (tidak)
+        :Lihat & verifikasi sertifikat diterima;
+      endif
     else (tidak)
+      if (Role = Admin?) then (ya)
+        :Approve issuer;
+        :Akses semua fitur Issuer;
+      else (tidak)
+        if (Role = Issuer?) then (ya)
+          :Akses semua fitur Issuer;
+        else (tidak)
+          :Lihat & verifikasi sertifikat diterima;
+        endif
+      endif
     endif
-    :Lihat semua sertifikat;
   else (tidak)
-    if (Role = Issuer?) then (ya)
-      :Upload sertifikat (single/bulk);
-      :Simpan sebagai draft di DB;
-      :Pilih draft untuk diterbitkan;
-      :Publish ke blockchain (bulk/single);
-      :Update status sertifikat di DB;
-    else (tidak)
-      :Lihat/Verifikasi sertifikat;
-    endif
+    :Tampilkan error login;
   endif
 else (tidak)
-  :Tampilkan error login;
+  :Selesai;
 endif
 stop
+
+' Keterangan:
+' Fitur Issuer: upload, draft, publish, lihat, verifikasi sertifikat
 @enduml 
