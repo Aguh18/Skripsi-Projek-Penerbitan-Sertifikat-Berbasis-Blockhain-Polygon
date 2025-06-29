@@ -5,15 +5,12 @@ import contractABI from '../ABI.json';
 import { toast } from 'react-toastify';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { NETWORKS, DEFAULT_NETWORK, CONTRACTS } from '../config/network';
 
-const contractAddress = '0x5FbDB2315678afecb367f032d93F642f64180aa3';
-const networkConfig = {
-  chainId: '0x7a69',
-  chainName: 'Hardhat Local',
-  rpcUrls: ['http://127.0.0.1:8545/'],
-  nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
-  blockExplorerUrls: [],
-};
+const contractAddress = CONTRACTS.certificateRegistry.address; // Untuk Polygon Mainnet, uncomment baris di bawah ini:
+// const contractAddress = '0xB527B1ED788e26639Fdd5E4E9b9dD200eD4E7F9D';
+const networkConfig = NETWORKS[DEFAULT_NETWORK]; // Untuk Polygon Mainnet, uncomment baris di bawah ini:
+// const networkConfig = NETWORKS['polygon'];
 
 const VerifyCertificate = () => {
   const [contract, setContract] = useState(null);
@@ -25,6 +22,10 @@ const VerifyCertificate = () => {
   const [selectedFile, setSelectedFile] = useState(null);
   const navigate = useNavigate();
   const { isVerifier, isIssuer } = useAuth();
+
+  // Get contract address and network config based on selected network
+  // const contractAddress = CONTRACTS.certificateRegistry[network];
+  // const networkConfig = NETWORKS[network];
 
   // Function to format CID URL
   const formatCidUrl = (cid) => {

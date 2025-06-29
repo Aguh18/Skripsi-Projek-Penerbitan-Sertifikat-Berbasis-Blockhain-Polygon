@@ -3,12 +3,14 @@ import { useState, useEffect } from 'react';
 import { BrowserProvider, Contract, isAddress, keccak256, parseUnits } from 'ethers';
 import contractABI from '../ABI.json';
 import { toast } from 'react-toastify';
-import { NETWORKS, CONTRACTS, DEFAULT_NETWORK, APP_CONFIG } from '../config/network';
+import { NETWORKS, DEFAULT_NETWORK, CONTRACTS, APP_CONFIG } from '../config/network';
 import axios from 'axios';
 import { getEnv } from '../utils/env';
 
 const contractAddress = CONTRACTS.certificateRegistry.address;
+// const contractAddress = '0xB527B1ED788e26639Fdd5E4E9b9dD200eD4E7F9D';
 const networkConfig = NETWORKS[DEFAULT_NETWORK];
+// const networkConfig = NETWORKS['polygon'];
 
 const Submit = () => {
     const navigate = useNavigate();
@@ -220,13 +222,17 @@ const Submit = () => {
             // Ensure CID is properly formatted
             const formattedCid = certificateData.fileCid.startsWith('0x') ? certificateData.fileCid : `0x${certificateData.fileCid}`;
 
+            // Ambil nama penerbit dari localStorage
+            const userProfile = JSON.parse(localStorage.getItem('userProfile'));
+            const issuerName = userProfile?.name || '-';
+
             console.log('Sending data to contract:', {
                 id: certificateData.id,
                 title: certificateData.certificateTitle,
                 expiryDate: formattedExpiryDate,
                 issueDate: formattedIssueDate,
                 cid: formattedCid,
-                issuer: certificateData.issuerName,
+                issuer: issuerName,
                 recipient: certificateData.recipientName,
                 targetAddress: certificateData.targetAddress
             });
@@ -238,7 +244,7 @@ const Submit = () => {
                 String(formattedExpiryDate),
                 String(formattedIssueDate),
                 String(formattedCid),
-                String(certificateData.issuerName),
+                String(issuerName),
                 String(certificateData.recipientName),
                 String(certificateData.targetAddress),
                 { gasLimit: APP_CONFIG.maxGasLimit } // Use gas limit from config

@@ -9,6 +9,9 @@ import contractABI from '../ABI.json';
 import { BrowserProvider, Contract } from 'ethers';
 import { CONTRACTS } from '../config/network';
 
+const contractAddress = CONTRACTS.certificateRegistry.address; // Untuk Polygon Mainnet, uncomment baris di bawah ini:
+// const contractAddress = '0xB527B1ED788e26639Fdd5E4E9b9dD200eD4E7F9D';
+
 const Certificates = () => {
     const { isIssuer, isVerifier } = useAuth();
     const navigate = useNavigate();
@@ -20,7 +23,6 @@ const Certificates = () => {
     const [loadingDraft, setLoadingDraft] = useState(false);
     const [selectedDrafts, setSelectedDrafts] = useState([]);
     const [bulkPublishing, setBulkPublishing] = useState(false);
-    const contractAddress = CONTRACTS.certificateRegistry.address;
 
     useEffect(() => {
         if (activeTab === 'draft') {

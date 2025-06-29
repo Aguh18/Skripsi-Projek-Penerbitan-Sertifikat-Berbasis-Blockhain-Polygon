@@ -3,8 +3,7 @@ import { Outlet, useNavigate } from "react-router-dom";
 import { BrowserProvider, Contract } from "ethers";
 import Navbar from "../components/Navbar";
 import Sidebar from "../components/Sidebar";
-
-const contractAddress = process.env.REACT_APP_CONTRACT_ADDRESS;
+import { CONTRACTS } from "../config/network";
 
 function Root() {
     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);

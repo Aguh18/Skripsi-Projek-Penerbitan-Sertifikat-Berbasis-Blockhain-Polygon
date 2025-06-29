@@ -5,7 +5,10 @@ import { toast } from 'react-toastify';
 import { useNavigate } from 'react-router-dom';
 import { BrowserProvider, Contract } from 'ethers';
 import contractABI from '../ABI.json';
-import { CONTRACTS, NETWORKS, DEFAULT_NETWORK } from '../config/network';
+import { CONTRACTS } from '../config/network';
+
+const contractAddress = CONTRACTS.certificateRegistry.address; // Untuk Polygon Mainnet, uncomment baris di bawah ini:
+// const contractAddress = '0xB527B1ED788e26639Fdd5E4E9b9dD200eD4E7F9D';
 
 const IssuerApprovals = () => {
     const [requests, setRequests] = useState([]);
@@ -55,7 +58,7 @@ const IssuerApprovals = () => {
             // 1. Connect to contract
             const provider = new BrowserProvider(window.ethereum);
             const signer = await provider.getSigner();
-            const contract = new Contract(CONTRACTS.certificateRegistry.address, contractABI, signer);
+            const contract = new Contract(contractAddress, contractABI, signer);
             // 2. Call addIssuer on contract
             const tx = await contract.addIssuer(walletAddress);
             toast.info('Menunggu konfirmasi blockchain...');

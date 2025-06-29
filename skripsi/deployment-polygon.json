@@ -1,0 +1,9 @@
+{
+  "network": "polygon",
+  "chainId": 137,
+  "contract": "CertificateRegistry",
+  "address": "0xB527B1ED788e26639Fdd5E4E9b9dD200eD4E7F9D",
+  "explorer": "https://polygonscan.com/address/0xB527B1ED788e26639Fdd5E4E9b9dD200eD4E7F9D",
+  "rpcUrl": "https://polygon-rpc.com",
+  "deployedAt": "2025-06-29T09:05:06.562Z"
+}

@@ -28,8 +28,9 @@ const requireIssuer = (req, res, next) => {
         return res.status(401).json({ error: 'Invalid token' });
     }
 
-    if (decoded.role !== 'issuer') {
-        return res.status(403).json({ error: 'Access denied. Issuer role required' });
+    // Admin dan issuer boleh mengakses
+    if (decoded.role !== 'issuer' && decoded.role !== 'admin') {
+        return res.status(403).json({ error: 'Access denied. Issuer or admin role required' });
     }
 
     req.user = decoded;

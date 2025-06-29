@@ -13,6 +13,7 @@ const { prisma } = require('../config');
 const { decodeToken } = require('../utils/jwt');
 const { deleteTemplate } = require('../services/certificate-service');
 const PinataStorageClient = require('../config/storage');
+const { parseDate, isValidExpiryDate, isExpired } = require('../utils/dateUtils');
 
 const create = async (req, res) => {
   // HTML template sertifikat dengan styling menggunakan CSS inline
@@ -125,6 +126,35 @@ const issueCertificate = async (req, res) => {
   } = req.body;
 
   try {
+    // Validasi format tanggal
+    if (!parseDate(issueDate)) {
+      return res.status(StatusCodes.BAD_REQUEST).json({
+        success: false,
+        message: 'Format tanggal penerbitan tidak valid. Gunakan format YYYY-MM-DD',
+        error: 'Invalid issue date format',
+        data: {},
+      });
+    }
+
+    if (expiryDate && !parseDate(expiryDate)) {
+      return res.status(StatusCodes.BAD_REQUEST).json({
+        success: false,
+        message: 'Format tanggal kadaluarsa tidak valid. Gunakan format YYYY-MM-DD',
+        error: 'Invalid expiry date format',
+        data: {},
+      });
+    }
+
+    // Validasi expiry date harus lebih baru dari issue date
+    if (expiryDate && !isValidExpiryDate(expiryDate, issueDate)) {
+      return res.status(StatusCodes.BAD_REQUEST).json({
+        success: false,
+        message: 'Tanggal kadaluarsa harus lebih baru dari tanggal penerbitan',
+        error: 'Invalid expiry date',
+        data: {},
+      });
+    }
+
     // Get template data
     const template = await prisma.template.findUnique({
       where: { id: templateId },
@@ -186,6 +216,10 @@ const issueCertificate = async (req, res) => {
     // Generate hash for certificate ID
     const certificateId = keccak256(fileContent);
 
+    // Parse dates dengan utility function
+    const parsedIssueDate = parseDate(issueDate);
+    const parsedExpiryDate = expiryDate ? parseDate(expiryDate) : null;
+
     // Save certificate data to database
     const certificate = await prisma.certificate.create({
       data: {
@@ -193,8 +227,8 @@ const issueCertificate = async (req, res) => {
         templateId: templateId,
         recipientName,
         certificateTitle: template.name,
-        issueDate: new Date(issueDate),
-        expiryDate: expiryDate ? new Date(expiryDate) : null,
+        issueDate: parsedIssueDate,
+        expiryDate: parsedExpiryDate,
         issuerName: userData.name || userData.walletAddress,
         targetAddress,
         issuerAddress: userData.walletAddress,

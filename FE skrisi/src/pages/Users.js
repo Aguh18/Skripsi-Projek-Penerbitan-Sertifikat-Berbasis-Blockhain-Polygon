@@ -7,6 +7,9 @@ import { BrowserProvider, Contract } from 'ethers';
 import contractABI from '../ABI.json';
 import { CONTRACTS } from '../config/network';
 
+const contractAddress = CONTRACTS.certificateRegistry.address; // Untuk Polygon Mainnet, uncomment baris di bawah ini:
+// const contractAddress = '0xB527B1ED788e26639Fdd5E4E9b9dD200eD4E7F9D';
+
 const Users = () => {
     const [users, setUsers] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -81,7 +84,7 @@ const Users = () => {
         try {
             const provider = new BrowserProvider(window.ethereum);
             const signer = await provider.getSigner();
-            const contract = new Contract(CONTRACTS.certificateRegistry.address, contractABI, signer);
+            const contract = new Contract(contractAddress, contractABI, signer);
             const tx = await contract.addIssuer(walletAddress);
             toast.info('Menunggu konfirmasi blockchain...');
             await tx.wait();

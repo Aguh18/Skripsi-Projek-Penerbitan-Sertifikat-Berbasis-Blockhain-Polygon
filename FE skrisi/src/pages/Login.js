@@ -4,9 +4,9 @@ import { BrowserProvider, Contract } from "ethers";
 import axios from 'axios';
 import { getEnv } from '../utils/env';
 import { useAuth } from '../context/AuthContext';
-import { NETWORKS, DEFAULT_NETWORK } from '../config/network';
+import { NETWORKS, DEFAULT_NETWORK, CONTRACTS } from '../config/network';
 
-const contractAddress = process.env.REACT_APP_CONTRACT_ADDRESS;
+const contractAddress = CONTRACTS.certificateRegistry.address;
 const baseUrl = process.env.REACT_APP_BASE_URL;
 
 function Login() {
