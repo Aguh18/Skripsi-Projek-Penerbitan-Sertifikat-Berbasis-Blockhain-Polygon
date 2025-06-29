@@ -1,19 +1,12 @@
 @startuml
 start
-:User membuka aplikasi;
-:Login via MetaMask;
-if (Login sukses?) then (ya)
-  :Lihat sertifikat diterima;
-  :Verifikasi sertifikat;
-  :Ajukan permohonan menjadi issuer ke admin;
-  :Menunggu approval admin;
-  if (Disetujui admin?) then (ya)
-    :Notifikasi: Role berubah menjadi Issuer;
-  else (tidak)
-    :Tetap sebagai verifier;
-  endif
+:User input ID/CID atau upload file PDF;
+:Ambil data dari smart contract & IPFS (jika perlu);
+:Cek/hash file PDF;
+if (Hash cocok?) then (ya)
+  :Valid;
 else (tidak)
-  :Tampilkan error login;
+  :Tidak valid;
 endif
 stop
 @enduml 

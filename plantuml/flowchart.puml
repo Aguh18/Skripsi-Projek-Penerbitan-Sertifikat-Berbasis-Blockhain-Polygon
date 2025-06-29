@@ -1,39 +1,28 @@
 @startuml
+|Issuer|
 start
-:User membuka aplikasi (Landing Page);
-if (Verifikasi sertifikat?) then (ya)
-  :Verifikasi sertifikat (tanpa login);
-endif
-if (Login?) then (ya)
-  :Login via MetaMask;
-  if (Login sukses?) then (ya)
-    if (Role = Verifier?) then (ya)
-      :Kirim permohonan menjadi issuer;
-      if (Disetujui admin?) then (ya)
-        :Akses fitur Issuer;
-      else (tidak)
-        :Lihat & verifikasi sertifikat diterima;
-      endif
-    else (tidak)
-      if (Role = Admin?) then (ya)
-        :Approve issuer;
-        :Akses semua fitur Issuer;
-      else (tidak)
-        if (Role = Issuer?) then (ya)
-          :Akses semua fitur Issuer;
-        else (tidak)
-          :Lihat & verifikasi sertifikat diterima;
-        endif
-      endif
-    endif
-  else (tidak)
-    :Tampilkan error login;
-  endif
-else (tidak)
-  :Selesai;
-endif
+:Login;
+:Memilih template sertifikat;
+:Input data penerima;
+|System|
+:Generate sertifikat (HTML ke PDF);
+:Upload PDF ke IPFS;
+:Hash file (keccak256);
+:Simpan data ke database;
+:Notifikasi sertifikat siap diakses;
 stop
 
-' Keterangan:
-' Fitur Issuer: upload, draft, publish, lihat, verifikasi sertifikat
+|User|
+start
+:Kirim URL/IPFS CID ke sistem;
+|System|
+:Download PDF dari IPFS;
+:Hitung hash file (keccak256);
+:Bandingkan hash dengan database;
+alt Hash cocok
+  :Sertifikat valid;
+else Hash tidak cocok
+  :Sertifikat tidak valid;
+end
+stop
 @enduml 
