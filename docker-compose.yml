@@ -1,0 +1,32 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./BE skripsi
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+    volumes:
+      - ./BE skripsi/.env:/app/.env
+    restart: unless-stopped
+    networks:
+      - app-network
+
+  frontend:
+    build:
+      context: ./FE skrisi
+      dockerfile: Dockerfile
+    ports:
+      - "8080:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge 
