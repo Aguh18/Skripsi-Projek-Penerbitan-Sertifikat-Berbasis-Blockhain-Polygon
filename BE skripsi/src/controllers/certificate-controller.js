@@ -1,7 +1,11 @@
 const puppeteer = require('puppeteer');
 const axios = require('axios');
 const { StatusCodes } = require('http-status-codes');
-const Client = require('@web3-storage/w3up-client').default
+// Ganti require ESM dengan dynamic import agar tidak error di Node.js
+let Client;
+(async () => {
+  Client = (await import('@web3-storage/w3up-client')).default;
+})();
 const path = require('path');
 const fs = require('fs/promises');
 const fsSync = require('fs');

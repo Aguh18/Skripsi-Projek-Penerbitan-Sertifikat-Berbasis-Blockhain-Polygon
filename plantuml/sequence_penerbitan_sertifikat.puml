@@ -1,0 +1,18 @@
+@startuml
+actor User
+participant Frontend
+participant Backend
+participant "Smart Contract (Polygon)" as SC
+participant IPFS
+
+== Penerbitan Sertifikat ==
+User -> Frontend: Input data sertifikat
+Frontend -> Backend: Kirim data sertifikat
+Backend -> Backend: Generate PDF
+Backend -> IPFS: Upload file PDF
+IPFS --> Backend: CID file
+Backend -> SC: Publish hash/CID ke blockchain
+SC --> Backend: TX hash
+Backend -> Frontend: Status sukses/gagal
+Frontend -> User: Tampilkan notifikasi
+@enduml 

@@ -1,0 +1,64 @@
+@startuml
+actor User
+actor Admin
+participant Frontend
+participant Backend
+
+== Pengajuan & Approval Issuer ==
+User -> Frontend: Login (MetaMask)
+Frontend -> Backend: Kirim signature
+Backend -> Backend: Verifikasi user
+Frontend <-- Backend: Token akses
+User -> Frontend: Ajukan permohonan issuer
+Frontend -> Backend: Kirim data permohonan
+Backend -> Backend: Simpan permohonan
+Admin -> Frontend: Login (MetaMask)
+Frontend -> Backend: Kirim signature
+Backend -> Backend: Verifikasi admin
+Frontend <-- Backend: Token akses
+Admin -> Frontend: Review permohonan
+Frontend -> Backend: Request data permohonan
+Backend -> Frontend: Data permohonan
+Admin -> Frontend: Approve/Reject
+Frontend -> Backend: Kirim keputusan
+Backend -> Backend: Update status permohonan
+Backend -> Frontend: Status update
+@enduml
+
+@startuml
+actor User
+participant Frontend
+participant Backend
+participant "Smart Contract (Polygon)" as SC
+participant IPFS
+
+== Penerbitan Sertifikat ==
+User -> Frontend: Input data sertifikat
+Frontend -> Backend: Kirim data sertifikat
+Backend -> Backend: Generate PDF
+Backend -> IPFS: Upload file PDF
+IPFS --> Backend: CID file
+Backend -> SC: Publish hash/CID ke blockchain
+SC --> Backend: TX hash
+Backend -> Frontend: Status sukses/gagal
+Frontend -> User: Tampilkan notifikasi
+@enduml
+
+@startuml
+actor User
+participant Frontend
+participant Backend
+participant "Smart Contract (Polygon)" as SC
+participant IPFS
+
+== Verifikasi Sertifikat ==
+User -> Frontend: Input CID/URL sertifikat
+Frontend -> Backend: Kirim permintaan verifikasi
+Backend -> IPFS: Download file PDF
+IPFS --> Backend: File PDF
+Backend -> SC: Ambil hash dari blockchain
+SC --> Backend: Hash on-chain
+Backend -> Backend: Bandingkan hash file vs hash on-chain
+Backend -> Frontend: Status valid/tidak valid
+Frontend -> User: Tampilkan hasil verifikasi
+@enduml 

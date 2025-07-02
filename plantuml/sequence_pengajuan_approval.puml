@@ -1,0 +1,26 @@
+@startuml
+actor User
+actor Admin
+participant Frontend
+participant Backend
+
+== Pengajuan & Approval Issuer ==
+User -> Frontend: Login (MetaMask)
+Frontend -> Backend: Kirim signature
+Backend -> Backend: Verifikasi user
+Frontend <-- Backend: Token akses
+User -> Frontend: Ajukan permohonan issuer
+Frontend -> Backend: Kirim data permohonan
+Backend -> Backend: Simpan permohonan
+Admin -> Frontend: Login (MetaMask)
+Frontend -> Backend: Kirim signature
+Backend -> Backend: Verifikasi admin
+Frontend <-- Backend: Token akses
+Admin -> Frontend: Review permohonan
+Frontend -> Backend: Request data permohonan
+Backend -> Frontend: Data permohonan
+Admin -> Frontend: Approve/Reject
+Frontend -> Backend: Kirim keputusan
+Backend -> Backend: Update status permohonan
+Backend -> Frontend: Status update
+@enduml 
