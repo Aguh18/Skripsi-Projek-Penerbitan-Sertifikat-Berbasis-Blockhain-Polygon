@@ -1,0 +1,30 @@
+@startuml
+start
+:User membuka aplikasi;
+:User klik tombol Login;
+:User connect MetaMask wallet;
+if (Wallet terdeteksi?) then (Ya)
+  :User sign message;
+  if (Signature valid?) then (Ya)
+    :Backend verifikasi signature;
+    if (User terdaftar?) then (Ya)
+      :Generate JWT token;
+      :Kirim token ke frontend;
+      :Redirect ke dashboard;
+      stop
+    else (Tidak)
+      :Buat user baru;
+      :Generate JWT token;
+      :Kirim token ke frontend;
+      :Redirect ke dashboard;
+      stop
+    endif
+  else (Tidak)
+    :Tampilkan error signature;
+    stop
+  endif
+else (Tidak)
+  :Tampilkan error wallet;
+  stop
+endif
+@enduml 

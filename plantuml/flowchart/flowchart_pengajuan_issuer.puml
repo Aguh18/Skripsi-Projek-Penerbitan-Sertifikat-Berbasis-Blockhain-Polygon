@@ -1,0 +1,28 @@
+@startuml
+start
+:User login ke aplikasi;
+:User akses menu Pengajuan Issuer;
+:User isi form pengajuan;
+note right
+  - Nama
+  - Email
+  - Alasan pengajuan
+end note
+:User submit form;
+if (Data lengkap?) then (Ya)
+  :Backend validasi data;
+  if (Valid?) then (Ya)
+    :Simpan ke database;
+    :Status = PENDING;
+    :Kirim notifikasi ke admin;
+    :Tampilkan pesan sukses;
+    stop
+  else (Tidak)
+    :Tampilkan error validasi;
+    stop
+  endif
+else (Tidak)
+  :Tampilkan error data tidak lengkap;
+  stop
+endif
+@enduml 

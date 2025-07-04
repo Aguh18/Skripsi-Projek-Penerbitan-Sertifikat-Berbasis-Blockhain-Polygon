@@ -1,0 +1,12 @@
+@startuml
+entity User
+entity Template
+entity Certificate
+entity IssuerApplication
+
+User ||--o{ Template : "memiliki"
+User ||--o{ Certificate : "menerbitkan"
+User ||--o{ Certificate : "menerima"
+Template ||--o{ Certificate : "digunakan oleh"
+User ||--o{ IssuerApplication : "mengajukan"
+@enduml 

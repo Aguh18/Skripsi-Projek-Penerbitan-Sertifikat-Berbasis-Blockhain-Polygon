@@ -1,0 +1,23 @@
+@startuml
+start
+:User login ke aplikasi;
+:User akses menu History/Riwayat;
+if (Role user?) then (Admin)
+  :Tampilkan semua sertifikat;
+elseif (Issuer) then
+  :Tampilkan sertifikat yang diterbitkan;
+elseif (Verifier) then
+  :Tampilkan sertifikat yang diterima;
+endif
+:User bisa filter berdasarkan;
+note right
+  - Status (Draft, Active, Expired)
+  - Tanggal terbit
+  - Nama penerima
+  - Template
+end note
+:User bisa search sertifikat;
+:User bisa download sertifikat;
+:User bisa lihat detail sertifikat;
+stop
+@enduml 

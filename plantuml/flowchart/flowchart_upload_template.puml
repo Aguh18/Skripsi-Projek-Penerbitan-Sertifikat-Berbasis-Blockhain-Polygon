@@ -1,0 +1,29 @@
+@startuml
+start
+:Issuer login ke aplikasi;
+:Issuer akses menu Upload Template;
+:Issuer pilih file template;
+note right
+  Format: PNG, JPG
+  Ukuran: < 5MB
+end note
+if (File valid?) then (Ya)
+  :Issuer isi nama template;
+  :Issuer set posisi nama (X,Y);
+  :Issuer submit form;
+  :Backend validasi file;
+  if (Valid?) then (Ya)
+    :Upload file ke IPFS;
+    :Dapat CID file;
+    :Simpan data ke database;
+    :Tampilkan pesan sukses;
+    stop
+  else (Tidak)
+    :Tampilkan error validasi;
+    stop
+  endif
+else (Tidak)
+  :Tampilkan error format file;
+  stop
+endif
+@enduml 

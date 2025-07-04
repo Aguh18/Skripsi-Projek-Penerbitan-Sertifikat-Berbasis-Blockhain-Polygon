@@ -1,0 +1,26 @@
+@startuml
+start
+:Admin login ke aplikasi;
+:Admin akses menu Approval Issuer;
+:Admin lihat daftar permohonan;
+if (Ada permohonan pending?) then (Ya)
+  :Admin pilih permohonan;
+  :Admin review data permohonan;
+  :Admin pilih approve/reject;
+  if (Approve?) then (Ya)
+    :Update status = APPROVED;
+    :Update role user = issuer;
+    :Kirim notifikasi ke user;
+    :Tampilkan pesan sukses;
+    stop
+  else (Reject)
+    :Update status = REJECTED;
+    :Kirim notifikasi ke user;
+    :Tampilkan pesan sukses;
+    stop
+  endif
+else (Tidak)
+  :Tampilkan pesan tidak ada permohonan;
+  stop
+endif
+@enduml 

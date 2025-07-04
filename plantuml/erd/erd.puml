@@ -1,0 +1,49 @@
+@startuml
+entity "Users" as user {
+  *walletAddress : String [PK]
+  name : String
+  email : String
+  role : String
+  createdAt : DateTime
+}
+entity "Templates" as template {
+  *id : String [PK]
+  userId : String [FK]
+  name : String
+  filePath : String
+  isDeleted : Boolean
+  createdAt : DateTime
+}
+entity "Certificates" as certificate {
+  *id : String [PK]
+  templateId : String [FK]
+  recipientName : String
+  certificateTitle : String
+  issueDate : DateTime
+  expiryDate : DateTime
+  issuerName : String
+  targetAddress : String
+  issuerAddress : String
+  filePath : String
+  ipfsCid : String
+  status : String
+  createdAt : DateTime
+}
+entity "IssuerApplications" as issuer_application {
+  *id : String [PK]
+  userId : String [FK]
+  name : String
+  email : String
+  reason : String
+  status : String
+  reviewedBy : String
+  reviewedAt : DateTime
+  createdAt : DateTime
+}
+
+user ||--o{ template : "memiliki"
+template ||--o{ certificate : "digunakan oleh"
+user ||--o{ certificate : "menerbitkan"
+user ||--o{ certificate : "menerima"
+user ||--o{ issuer_application : "mengajukan"
+@enduml 

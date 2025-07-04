@@ -1,0 +1,27 @@
+@startuml
+start
+:Issuer login ke aplikasi;
+:Issuer akses menu Draft Certificates;
+:Issuer pilih sertifikat draft;
+:Issuer klik Publish;
+if (Wallet terhubung?) then (Ya)
+  :Backend siapkan data sertifikat;
+  :Backend kirim transaksi ke Polygon;
+  if (Transaksi berhasil?) then (Ya)
+    :Dapat TX hash;
+    :Update status = ACTIVE;
+    :Simpan TX hash ke database;
+    :Tampilkan pesan sukses;
+    :Tampilkan link blockchain;
+    stop
+  else (Tidak)
+    :Tampilkan error transaksi;
+    :Status tetap DRAFT;
+    stop
+  endif
+else (Tidak)
+  :Minta user connect wallet;
+  :User connect MetaMask;
+  :Kembali ke proses publish;
+endif
+@enduml 

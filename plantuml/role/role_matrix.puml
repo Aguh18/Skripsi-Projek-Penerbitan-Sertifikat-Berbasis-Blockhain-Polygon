@@ -1,0 +1,12 @@
+@startuml
+|= Fitur / Menu |= Admin |= Issuer |= Verifier |= Guest |
+| Login                       |  ✔   |   ✔    |    ✔     |   ✔   |
+| Pengajuan Issuer            |      |   ✔    |    ✔     |       |
+| Approval Issuer             |  ✔   |        |          |       |
+| Upload Template             |      |   ✔    |          |       |
+| Issue Certificate           |      |   ✔    |          |       |
+| Publish Certificate         |      |   ✔    |          |       |
+| Lihat Sertifikat            |  ✔   |   ✔    |    ✔     |   ✔   |
+| Verifikasi Sertifikat       |  ✔   |   ✔    |    ✔     |   ✔   |
+| Lihat Riwayat Sertifikat    |  ✔   |   ✔    |    ✔     |       |
+@enduml 

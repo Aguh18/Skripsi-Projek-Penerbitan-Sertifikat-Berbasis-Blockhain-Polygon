@@ -1,0 +1,21 @@
+@startuml
+left to right direction
+actor Admin
+actor Issuer
+actor User
+actor Guest
+
+rectangle Sistem {
+  User -- (Login)
+  User -- (Pengajuan Issuer)
+  Admin -- (Approval Issuer)
+  Issuer -- (Upload Template)
+  Issuer -- (Issue Certificate)
+  Issuer -- (Publish Certificate)
+  User -- (Verifikasi Sertifikat)
+  Guest -- (Verifikasi Sertifikat)
+  User -- (Lihat Riwayat Sertifikat)
+  Issuer -- (Lihat Riwayat Sertifikat)
+  Admin -- (Lihat Riwayat Sertifikat)
+}
+@enduml 
