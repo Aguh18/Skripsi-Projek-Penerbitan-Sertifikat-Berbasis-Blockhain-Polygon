@@ -1,37 +1,28 @@
 @startuml
 start
-:Issuer login ke aplikasi;
-:Issuer akses menu Bulk Issue Certificate;
-:Issuer pilih template;
-:Issuer upload file Excel;
-note right
-  Format: XLSX
-  Kolom: Nama, Wallet, Tanggal Terbit, Tanggal Kadaluarsa
-end note
+:Issuer login;
+:Bulk Issue Certificate;
+:Pilih template;
+:Upload file Excel (XLSX);
 if (File valid?) then (Ya)
-  :Backend parse file Excel;
+  :Parse file Excel;
   if (Data valid?) then (Ya)
-    :Loop untuk setiap data;
-    :Generate PDF sertifikat;
-    :Upload PDF ke IPFS;
-    :Dapat CID file;
-    :Generate hash sertifikat;
-    :Simpan data ke database;
-    :Status = DRAFT;
-    :Tampilkan progress;
-    if (Semua data selesai?) then (Ya)
-      :Tampilkan pesan sukses;
-      :Tampilkan ringkasan hasil;
-      stop
-    else (Tidak)
-      :Lanjut ke data berikutnya;
-    endif
+    repeat
+      :Ambil data baris berikutnya;
+      :Generate PDF;
+      :Upload ke IPFS;
+      :Dapat CID;
+      :Generate hash;
+      :Simpan ke database (status DRAFT);
+    repeat while (Masih ada data?)
+    :Tampilkan pesan sukses;
+    stop
   else (Tidak)
-    :Tampilkan error format data;
+    :Tampilkan error data;
     stop
   endif
 else (Tidak)
-  :Tampilkan error format file;
+  :Tampilkan error file;
   stop
 endif
 @enduml 

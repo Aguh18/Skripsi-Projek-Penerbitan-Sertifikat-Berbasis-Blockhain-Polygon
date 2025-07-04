@@ -1,12 +1,12 @@
 @startuml
-entity User
-entity Template
-entity Certificate
-entity IssuerApplication
+entity Users
+entity Templates
+entity Certificates
+entity IssuerApplications
 
-User ||--o{ Template : "memiliki"
-User ||--o{ Certificate : "menerbitkan"
-User ||--o{ Certificate : "menerima"
-Template ||--o{ Certificate : "digunakan oleh"
-User ||--o{ IssuerApplication : "mengajukan"
+Users ||--o{ Templates : "memiliki"
+Users ||--o{ Certificates : "menerbitkan"
+Users ||--o{ Certificates : "menerima"
+Templates ||--o{ Certificates : "digunakan oleh"
+Users ||--o{ IssuerApplications : "mengajukan"
 @enduml 
