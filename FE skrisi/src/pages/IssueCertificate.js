@@ -347,6 +347,31 @@ const IssueCertificate = () => {
                 {mode === 'bulk' && (
                     <form onSubmit={handleBulkSubmit} className="card bg-gray-800/30 backdrop-blur-sm border border-gray-700/30 rounded-2xl p-8 shadow-xl">
                         <h3 className="text-xl font-bold mb-4 text-blue-400">Bulk Upload Sertifikat (Excel)</h3>
+                        {/* Certificate Template Download Section */}
+                        <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4 mb-4">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <h3 className="text-lg font-semibold text-blue-400 mb-2">Template Excel Sertifikat</h3>
+                                    <p className="text-gray-300 text-sm">Download template Excel untuk bulk upload sertifikat</p>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        const link = document.createElement('a');
+                                        link.href = '/certificate-template.xlsx';
+                                        link.download = 'certificate-template.xlsx';
+                                        document.body.appendChild(link);
+                                        link.click();
+                                        document.body.removeChild(link);
+                                    }}
+                                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors duration-200 flex items-center space-x-2"
+                                    title="Download Template Excel"
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4 mr-1"><path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m0 0l-6-6m6 6l6-6" /></svg>
+                                    <span>Download Template Excel</span>
+                                </button>
+                            </div>
+                        </div>
                         <div className="mb-4">
                             <label className="block text-sm font-medium text-gray-300 mb-2">Template Sertifikat</label>
                             <select

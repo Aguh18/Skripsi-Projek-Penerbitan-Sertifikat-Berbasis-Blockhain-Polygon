@@ -79,7 +79,7 @@ function LoadingScreen() {
       {/* Spinner */}
       <div className="relative z-10 flex flex-col items-center">
         <div className="w-20 h-20 border-4 border-blue-500 border-t-transparent border-b-purple-500 border-l-pink-500 rounded-full animate-spin mb-8 shadow-2xl"></div>
-        <h1 className="text-3xl font-bold text-white mb-2 tracking-widest animate-fade-in">Skripsweet</h1>
+        <h1 className="text-3xl font-bold text-white mb-2 tracking-widest animate-fade-in">certchain</h1>
         <p className="text-lg text-blue-200 animate-fade-in-slow">Loading platform blockchain...</p>
       </div>
     </div>

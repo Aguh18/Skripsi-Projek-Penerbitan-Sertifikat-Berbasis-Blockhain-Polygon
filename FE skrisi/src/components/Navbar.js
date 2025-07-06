@@ -53,7 +53,7 @@ function Navbar() {
                                 isCorrectNetwork ? (
                                     <>
                                         <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse-slow"></div>
-                                        <span className="text-sm text-blue-400">Connected to Hardhat</span>
+                                        <span className="text-sm text-blue-400">Connected to Polygon</span>
                                     </>
                                 ) : (
                                     <>

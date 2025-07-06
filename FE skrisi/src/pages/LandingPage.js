@@ -305,7 +305,7 @@ const LandingPage = () => {
                         <h1 className="text-5xl md:text-7xl font-bold text-white mb-8 relative">
                             <span className="relative inline-block">
                                 <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 animate-gradient-x">
-                                    Skripsweet
+                                    certchain
                                 </span>
                                 <div className="absolute -inset-1 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg blur opacity-25 group-hover:opacity-100 transition duration-1000 group-hover:duration-200"></div>
                             </span>
@@ -433,7 +433,7 @@ const LandingPage = () => {
                     >
                         <h2 className="text-4xl font-bold text-white mb-6">
                             <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400">
-                                Keuntungan Menggunakan Skripsweet
+                                Keuntungan Menggunakan certchain
                             </span>
                         </h2>
                         <p className="text-xl text-gray-400 max-w-3xl mx-auto">Temukan berbagai keuntungan menggunakan platform kami</p>
@@ -772,7 +772,7 @@ const LandingPage = () => {
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="grid md:grid-cols-4 gap-8 mb-12">
                         <div>
-                            <h3 className="text-xl font-bold text-white mb-4">Skripsweet</h3>
+                            <h3 className="text-xl font-bold text-white mb-4">certchain</h3>
                             <p className="text-gray-400">Platform terdesentralisasi untuk penerbitan dan verifikasi sertifikat berbasis blockchain</p>
                         </div>
                         <div>
@@ -794,14 +794,14 @@ const LandingPage = () => {
                         <div>
                             <h4 className="text-lg font-semibold text-white mb-4">Kontak</h4>
                             <ul className="space-y-2">
-                                <li className="text-gray-400">Email: info@skripsweet.com</li>
+                                <li className="text-gray-400">Email: info@certchain.com</li>
                                 <li className="text-gray-400">Telepon: +62 123 4567 890</li>
                             </ul>
                         </div>
                     </div>
                     <div className="border-t border-gray-800 pt-8">
                         <div className="text-center text-gray-400">
-                            <p>&copy; 2024 Skripsweet. All rights reserved.</p>
+                            <p>&copy; 2024 certchain. All rights reserved.</p>
                         </div>
                     </div>
                 </div>

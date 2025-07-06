@@ -174,6 +174,10 @@ const Submit = () => {
         return null;
     }
 
+    // Ambil nama penerbit dari localStorage (global untuk render)
+    const userProfile = JSON.parse(localStorage.getItem('userProfile') || '{}');
+    const issuerName = userProfile.name || certificateData.issuerName || '-';
+
     const handleIssueCertificate = async () => {
         if (!window.ethereum) {
             toast.error('MetaMask tidak terdeteksi. Silakan install MetaMask.');
@@ -221,10 +225,6 @@ const Submit = () => {
 
             // Ensure CID is properly formatted
             const formattedCid = certificateData.fileCid.startsWith('0x') ? certificateData.fileCid : `0x${certificateData.fileCid}`;
-
-            // Ambil nama penerbit dari localStorage
-            const userProfile = JSON.parse(localStorage.getItem('userProfile'));
-            const issuerName = userProfile?.name || '-';
 
             console.log('Sending data to contract:', {
                 id: certificateData.id,
@@ -354,14 +354,14 @@ const Submit = () => {
                         <div className="space-y-4">
                             <div>
                                 <label className="block text-sm font-medium text-gray-400 mb-1">ID Sertifikat</label>
-                                <div className="bg-gray-800/50 p-3 rounded-lg border border-gray-700/30 font-mono text-sm text-gray-300">
+                                <div className="bg-gray-800/50 p-3 rounded-lg border border-gray-700/30 font-mono text-sm text-gray-300 break-all overflow-x-auto">
                                     {certificateData.id}
                                 </div>
                             </div>
 
                             <div>
                                 <label className="block text-sm font-medium text-gray-400 mb-1">Judul Sertifikat</label>
-                                <div className="bg-gray-800/50 p-3 rounded-lg border border-gray-700/30 text-gray-300">
+                                <div className="bg-gray-800/50 p-3 rounded-lg border border-gray-700/30 text-gray-300 break-words whitespace-pre-line">
                                     {certificateData.certificateTitle}
                                 </div>
                             </div>
@@ -369,14 +369,14 @@ const Submit = () => {
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
                                     <label className="block text-sm font-medium text-gray-400 mb-1">Nama Penerima</label>
-                                    <div className="bg-gray-800/50 p-3 rounded-lg border border-gray-700/30 text-gray-300">
+                                    <div className="bg-gray-800/50 p-3 rounded-lg border border-gray-700/30 text-gray-300 break-words whitespace-pre-line">
                                         {certificateData.recipientName}
                                     </div>
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium text-gray-400 mb-1">Nama Penerbit</label>
-                                    <div className="bg-gray-800/50 p-3 rounded-lg border border-gray-700/30 text-gray-300">
-                                        {certificateData.issuerName}
+                                    <div className="bg-gray-800/50 p-3 rounded-lg border border-gray-700/30 text-gray-300 break-words whitespace-pre-line">
+                                        {issuerName}
                                     </div>
                                 </div>
                             </div>
@@ -398,7 +398,7 @@ const Submit = () => {
 
                             <div>
                                 <label className="block text-sm font-medium text-gray-400 mb-1">Alamat Wallet Penerima</label>
-                                <div className="bg-gray-800/50 p-3 rounded-lg border border-gray-700/30 font-mono text-sm text-gray-300 break-all">
+                                <div className="bg-gray-800/50 p-3 rounded-lg border border-gray-700/30 font-mono text-sm text-gray-300 break-all overflow-x-auto">
                                     {certificateData.targetAddress}
                                 </div>
                             </div>
