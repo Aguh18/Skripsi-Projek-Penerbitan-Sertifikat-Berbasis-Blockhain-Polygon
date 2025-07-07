@@ -545,5 +545,4 @@ export {
     getTemplate,
     generateCertificateFromTemplate,
     deleteTemplate
-};
-export default generateCertificate;
+}; export default generateCertificate;
