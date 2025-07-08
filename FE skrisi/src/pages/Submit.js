@@ -238,6 +238,10 @@ const Submit = () => {
             });
 
             // Call the contract function
+            const baseGasPrice = await signer.provider.getGasPrice();
+            const extra = parseUnits("0.25", "gwei");
+            const gasPrice = baseGasPrice.add(extra);
+            console.log('Base gas price:', baseGasPrice.toString(), 'Extra:', extra.toString(), 'Final gas price:', gasPrice.toString());
             const tx = await contract.issueCertificate(
                 String(certificateData.id),
                 String(certificateData.certificateTitle),
@@ -247,7 +251,7 @@ const Submit = () => {
                 String(issuerName),
                 String(certificateData.recipientName),
                 String(certificateData.targetAddress),
-                { gasLimit: APP_CONFIG.maxGasLimit } // Use gas limit from config
+                { gasLimit: APP_CONFIG.maxGasLimit, gasPrice }
             );
 
             // Show transaction pending toast

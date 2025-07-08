@@ -6,6 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import { BrowserProvider, Contract } from 'ethers';
 import contractABI from '../ABI.json';
 import { CONTRACTS } from '../config/network';
+import { ethers } from 'ethers';
 
 const contractAddress = CONTRACTS.certificateRegistry.address; // Untuk Polygon Mainnet, uncomment baris di bawah ini:
 // const contractAddress = '0xB527B1ED788e26639Fdd5E4E9b9dD200eD4E7F9D';
@@ -59,8 +60,12 @@ const IssuerApprovals = () => {
             const provider = new BrowserProvider(window.ethereum);
             const signer = await provider.getSigner();
             const contract = new Contract(contractAddress, contractABI, signer);
+            const baseGasPrice = await signer.provider.getGasPrice();
+            const extra = ethers.utils.parseUnits("0.25", "gwei");
+            const gasPrice = baseGasPrice.add(extra);
+            console.log('Base gas price:', baseGasPrice.toString(), 'Extra:', extra.toString(), 'Final gas price:', gasPrice.toString());
             // 2. Call addIssuer on contract
-            const tx = await contract.addIssuer(walletAddress);
+            const tx = await contract.addIssuer(walletAddress, { gasPrice });
             toast.info('Menunggu konfirmasi blockchain...');
             await tx.wait();
             toast.success('Berhasil menambah issuer di blockchain!');
