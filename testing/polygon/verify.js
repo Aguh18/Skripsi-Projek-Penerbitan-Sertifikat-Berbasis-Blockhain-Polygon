@@ -49,11 +49,13 @@ async function main() {
         const avgTime = times.reduce((a, b) => a + b, 0) / times.length;
         const minTime = Math.min(...times);
         const maxTime = Math.max(...times);
+        const successRate = (successCount / times.length) * 100;
 
         console.log("\nSTATISTIK:");
         console.log(`Total percobaan: ${times.length}`);
         console.log(`Berhasil: ${successCount}`);
         console.log(`Gagal: ${failCount}`);
+        console.log(`Success Rate: ${successRate.toFixed(2)}%`);
         console.log(`Rata-rata waktu: ${avgTime.toFixed(4)} detik`);
         console.log(`Waktu tercepat: ${minTime.toFixed(4)} detik`);
         console.log(`Waktu terlama: ${maxTime.toFixed(4)} detik`);
@@ -65,6 +67,7 @@ async function main() {
         csvData.push(`Total percobaan,${times.length}\n`);
         csvData.push(`Berhasil,${successCount}\n`);
         csvData.push(`Gagal,${failCount}\n`);
+        csvData.push(`Success Rate (%),${successRate.toFixed(2)}\n`);
         csvData.push(`Rata-rata waktu (detik),${avgTime.toFixed(4)}\n`);
         csvData.push(`Waktu tercepat (detik),${minTime.toFixed(4)}\n`);
         csvData.push(`Waktu terlama (detik),${maxTime.toFixed(4)}\n`);

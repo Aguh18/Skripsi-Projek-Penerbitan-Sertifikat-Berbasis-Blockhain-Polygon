@@ -1,26 +1,36 @@
-require('dotenv').config();
+require('dotenv').config({ path: __dirname + '/.env' });
 const { ethers } = require("ethers");
 const abi = require("./ABI.json");
+const fs = require('fs');
+const { keccak256, toUtf8Bytes } = ethers.utils;
 
-// === EDIT BAGIAN INI SESUAI KONFIGURASI KAMU ===
-const contractAddress = "0xB527B1ED788e26639Fdd5E4E9b9dD200eD4E7F9D"; // Sama dengan contract address di FE
-const batchData = [
-  // Isi array dengan data sertifikat berbeda untuk setiap transaksi
-  {
-    id: "THR-001",
-    certificateTitle: "Sertifikat Throughput 1",
+function randomAddress() {
+  // Generate random 20-byte hex address
+  let addr = '0x';
+  for (let i = 0; i < 40; i++) {
+    addr += Math.floor(Math.random() * 16).toString(16);
+  }
+  return addr;
+}
+
+const batchData = Array.from({ length: 10 }).map((_, i) => {
+  const dummyText = `THROUGHPUT-DUMMY-${Date.now()}-${i}-${Math.random()}`;
+  const id = keccak256(toUtf8Bytes(dummyText));
+  return {
+    id,
+    certificateTitle: `Sertifikat Throughput ${i + 1}`,
     expiryDate: "2025-12-31",
     issueDate: new Date().toISOString().slice(0, 10),
-    cid: "QmExampleCID1",
+    cid: `QmExampleCID${i + 1}`,
     issuerName: "Universitas Contoh",
-    recipientName: "Mahasiswa 1",
-    targetAddress: "ISI_ADDRESS_PENERIMA_1"
-  },
-  // Tambahkan data lain sesuai kebutuhan
-];
+    recipientName: `Mahasiswa ${i + 1}`,
+    targetAddress: randomAddress()
+  };
+});
 // ==============================================
 
-const provider = new ethers.JsonRpcProvider("https://polygon-rpc.com");
+const contractAddress = "0xB527B1ED788e26639Fdd5E4E9b9dD200eD4E7F9D";
+const provider = new ethers.providers.JsonRpcProvider("https://polygon-rpc.com");
 const privateKey = process.env.PRIVATE_KEY;
 const wallet = new ethers.Wallet(privateKey, provider);
 const contract = new ethers.Contract(contractAddress, abi, wallet);
@@ -53,11 +63,31 @@ async function main() {
   const endAll = Date.now();
   const success = results.filter(r => r.success).length;
   const failed = results.length - success;
+  const totalTime = (endAll - startAll) / 1000;
+  const throughput = (results.length / totalTime).toFixed(2);
+
+  // Prepare CSV data
+  const csvData = [
+    'No,Success,TxHash,GasUsed,Error\n'
+  ];
+  results.forEach((r, i) => {
+    csvData.push(`${i + 1},${r.success},${r.txHash || ''},${r.gasUsed || ''},${r.error || ''}\n`);
+  });
+  csvData.push('\nSUMMARY\n');
+  csvData.push(`Total,${results.length}\n`);
+  csvData.push(`Success,${success}\n`);
+  csvData.push(`Failed,${failed}\n`);
+  csvData.push(`Total Time (s),${totalTime.toFixed(4)}\n`);
+  csvData.push(`Throughput (tx/s),${throughput}\n`);
+
+  fs.writeFileSync('hasil_throughput.csv', csvData.join(''));
   console.log(`\nTotal: ${results.length}, Success: ${success}, Failed: ${failed}`);
-  console.log(`Throughput: ${(results.length / ((endAll - startAll) / 1000)).toFixed(2)} tx/s`);
+  console.log(`Throughput: ${throughput} tx/s`);
+  console.log(`Total Time: ${totalTime.toFixed(4)} detik`);
   if (failed > 0) {
     console.log("Error detail:", results.filter(r => !r.success).map(r => r.error));
   }
+  console.log("\nFile hasil_throughput.csv telah dibuat.");
 }
 
 main(); 
