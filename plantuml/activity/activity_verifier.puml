@@ -1,0 +1,12 @@
+@startuml
+start
+:User input ID/CID atau upload file PDF;
+:Ambil data dari smart contract & IPFS (jika perlu);
+:Cek/hash file PDF;
+if (Hash cocok?) then (ya)
+  :Valid;
+else (tidak)
+  :Tidak valid;
+endif
+stop
+@enduml 

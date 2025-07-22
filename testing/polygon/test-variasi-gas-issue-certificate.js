@@ -1,52 +1,69 @@
-require('dotenv').config();
+require('dotenv').config({ path: __dirname + '/.env' });
 const { ethers } = require("ethers");
 const fs = require('fs');
 const abi = require("./ABI.json");
 
-// === EDIT BAGIAN INI SESUAI KONFIGURASI KAMU ===
-const contractAddress = "0xB527B1ED788e26639Fdd5E4E9b9dD200eD4E7F9D"; // Sama dengan contract address di FE
-const certificateData = {
-    id: "VARIASI-001",
-    certificateTitle: "Sertifikat Variasi Gas",
-    expiryDate: "2025-12-31",
-    issueDate: new Date().toISOString().slice(0, 10),
-    cid: "QmExampleCID",
-    issuerName: "Universitas Contoh",
-    recipientName: "Nama Mahasiswa",
-    targetAddress: "ISI_ADDRESS_PENERIMA"
-};
-const logFile = "variasi-gas-log.txt";
-// ==============================================
-
-const provider = new ethers.JsonRpcProvider("https://polygon-rpc.com");
+const contractAddress = "0xB527B1ED788e26639Fdd5E4E9b9dD200eD4E7F9D";
+const provider = new ethers.providers.JsonRpcProvider("https://polygon-rpc.com");
 const privateKey = process.env.PRIVATE_KEY;
 const wallet = new ethers.Wallet(privateKey, provider);
 const contract = new ethers.Contract(contractAddress, abi, wallet);
 
-delete process.env.NODE_OPTIONS;
+function randomAddress() {
+    let addr = '0x';
+    for (let i = 0; i < 40; i++) {
+        addr += Math.floor(Math.random() * 16).toString(16);
+    }
+    return addr;
+}
 
 async function main() {
-    try {
-        console.log("Mengirim transaksi issueCertificate untuk variasi gas...");
-        const tx = await contract.issueCertificate(
-            certificateData.id,
-            certificateData.certificateTitle,
-            certificateData.expiryDate,
-            certificateData.issueDate,
-            certificateData.cid,
-            certificateData.issuerName,
-            certificateData.recipientName,
-            certificateData.targetAddress
-        );
-        const start = Date.now();
-        const receipt = await tx.wait();
-        const end = Date.now();
-        const log = `Date: ${new Date().toISOString()}, Confirmed in: ${((end - start) / 1000).toFixed(2)}s, Gas used: ${receipt.gasUsed.toString()}, Gas price: ${ethers.formatUnits(receipt.effectiveGasPrice, "gwei")} gwei, Total fee: ${ethers.formatEther(receipt.gasUsed * receipt.effectiveGasPrice)} MATIC\n`;
-        fs.appendFileSync(logFile, log);
-        console.log(log);
-    } catch (err) {
-        console.error("Gagal mengirim transaksi:", err.message);
+    const csvData = ['No,Timestamp,TxHash,GasUsed,GasPrice(gwei),TotalFee(MATIC),Time(s)\n'];
+    for (let i = 1; i <= 5; i++) {
+        const now = new Date();
+        const timestamp = now.toISOString();
+        const id = ethers.utils.keccak256(ethers.utils.toUtf8Bytes(`VARIASI-GAS-${timestamp}-${Math.random()}`));
+        const data = {
+            id,
+            certificateTitle: `Sertifikat Variasi Gas ${i}`,
+            expiryDate: "2025-12-31",
+            issueDate: now.toISOString().slice(0, 10),
+            cid: `QmVarGas${i}`,
+            issuerName: "Universitas Contoh",
+            recipientName: `Mahasiswa ${i}`,
+            targetAddress: randomAddress()
+        };
+        try {
+            const gasPrice = await provider.getGasPrice();
+            const tx = await contract.issueCertificate(
+                data.id,
+                data.certificateTitle,
+                data.expiryDate,
+                data.issueDate,
+                data.cid,
+                data.issuerName,
+                data.recipientName,
+                data.targetAddress,
+                { gasPrice, gasLimit: 500000 }
+            );
+            const start = Date.now();
+            const receipt = await tx.wait();
+            const end = Date.now();
+            const time = (end - start) / 1000;
+            const gasUsed = receipt.gasUsed.toString();
+            const gasPriceGwei = ethers.utils.formatUnits(gasPrice, "gwei");
+            const totalFee = ethers.utils.formatEther(receipt.gasUsed.mul(gasPrice));
+            csvData.push(`${i},${timestamp},${tx.hash},${gasUsed},${gasPriceGwei},${totalFee},${time.toFixed(4)}\n`);
+            console.log(`Tx ${i}: ${tx.hash} | GasUsed: ${gasUsed} | GasPrice: ${gasPriceGwei} gwei | Fee: ${totalFee} MATIC | Time: ${time.toFixed(4)}s`);
+        } catch (err) {
+            csvData.push(`${i},${timestamp},FAILED,N/A,N/A,N/A,N/A\n`);
+            console.log(`Tx ${i} FAILED: ${err.message}`);
+        }
+        // Tunggu 10 detik sebelum transaksi berikutnya (simulasi waktu berbeda)
+        if (i < 5) await new Promise(res => setTimeout(res, 10000));
     }
+    fs.writeFileSync('hasil_variasi_gas.csv', csvData.join(''));
+    console.log("\nFile hasil_variasi_gas.csv telah dibuat.");
 }
 
 main(); 

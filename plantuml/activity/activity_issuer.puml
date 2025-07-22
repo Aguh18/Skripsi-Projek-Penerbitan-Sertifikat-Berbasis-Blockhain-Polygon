@@ -1,0 +1,9 @@
+@startuml
+start
+:Upload template ke IPFS;
+:Input data penerima;
+:Generate PDF sertifikat;
+:Upload PDF ke IPFS;
+:Simpan data ke database & blockchain;
+stop
+@enduml 

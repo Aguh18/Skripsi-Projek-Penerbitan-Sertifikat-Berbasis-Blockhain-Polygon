@@ -1,0 +1,22 @@
+@startuml
+start
+:Admin login;
+:Review permohonan issuer;
+:Approve atau Reject;
+if (Approve?) then (Ya)
+  :Update status & role di database;
+  :Kirim transaksi ke blockchain (tambah address sebagai issuer);
+  if (Sukses?) then (Ya)
+    :Selesai;
+    stop
+  else (Tidak)
+    :Rollback database;
+    :Tampilkan error;
+    stop
+  endif
+else (Reject)
+  :Update status REJECTED di database;
+  :Selesai;
+  stop
+endif
+@enduml 

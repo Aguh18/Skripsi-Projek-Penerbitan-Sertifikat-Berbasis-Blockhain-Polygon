@@ -1,0 +1,29 @@
+@startuml
+start
+:User/Guest akses halaman verifikasi;
+:User input CID/URL sertifikat;
+if (CID valid?) then (Ya)
+  :Backend download file dari IPFS;
+  if (File ditemukan?) then (Ya)
+    :Backend hitung hash file;
+    :Backend ambil hash dari blockchain;
+    :Backend bandingkan hash;
+    if (Hash cocok?) then (Ya)
+      :Tampilkan sertifikat valid;
+      :Tampilkan detail sertifikat;
+      :Tampilkan link blockchain;
+      stop
+    else (Tidak)
+      :Tampilkan sertifikat tidak valid;
+      :Tampilkan pesan error;
+      stop
+    endif
+  else (Tidak)
+    :Tampilkan error file tidak ditemukan;
+    stop
+  endif
+else (Tidak)
+  :Tampilkan error CID tidak valid;
+  stop
+endif
+@enduml 
