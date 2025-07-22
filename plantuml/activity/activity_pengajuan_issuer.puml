@@ -1,28 +1,20 @@
 @startuml
-start
-:User login ke aplikasi;
-:User akses menu Pengajuan Issuer;
-:User isi form pengajuan;
-note right
-  - Nama
-  - Email
-  - Alasan pengajuan
-end note
-:User submit form;
-if (Data lengkap?) then (Ya)
-  :Backend validasi data;
-  if (Valid?) then (Ya)
-    :Simpan ke database;
-    :Status = PENDING;
+partition User {
+  start
+  :Login ke aplikasi;
+  :Akses menu Pengajuan Issuer;
+  :Isi form pengajuan;
+  :Submit form;
+}
+partition System {
+  :Validasi data;
+  if (Data valid?) then (ya)
+    :Simpan ke database (status pending);
     :Kirim notifikasi ke admin;
     :Tampilkan pesan sukses;
-    stop
-  else (Tidak)
+  else (tidak)
     :Tampilkan error validasi;
-    stop
   endif
-else (Tidak)
-  :Tampilkan error data tidak lengkap;
-  stop
-endif
+}
+end
 @enduml 

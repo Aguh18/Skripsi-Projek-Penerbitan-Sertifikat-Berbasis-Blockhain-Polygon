@@ -1,0 +1,23 @@
+@startuml
+partition Issuer {
+  start
+  :Login via MetaMask;
+  :Pilih menu Issue Certificate;
+  :Pilih template;
+  :Isi data penerima;
+  :Submit form penerbitan;
+}
+partition System {
+  :Validasi data;
+  if (Data valid?) then (ya)
+    :Generate PDF sertifikat;
+    :Upload PDF ke IPFS;
+    :Generate hash;
+    :Simpan data ke database (status draft);
+    :Tampilkan pesan sukses;
+  else (tidak)
+    :Tampilkan error validasi;
+  endif
+}
+end
+@enduml 

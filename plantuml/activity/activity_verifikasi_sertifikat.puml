@@ -1,0 +1,23 @@
+@startuml
+partition User/Verifier {
+  start
+  :Akses halaman verifikasi;
+  :Input CID/URL sertifikat;
+}
+partition System {
+  :Download file dari IPFS;
+  if (File ditemukan?) then (ya)
+    :Hitung hash file;
+    :Ambil hash dari blockchain;
+    :Bandingkan hash;
+    if (Hash cocok?) then (ya)
+      :Tampilkan sertifikat valid & detail;
+    else (tidak)
+      :Tampilkan sertifikat tidak valid;
+    endif
+  else (tidak)
+    :Tampilkan error file tidak ditemukan;
+  endif
+}
+end
+@enduml 

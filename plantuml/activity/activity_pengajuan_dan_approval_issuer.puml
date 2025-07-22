@@ -1,6 +1,22 @@
 @startuml
-partition Admin {
+partition User {
   start
+  :Login ke aplikasi;
+  :Akses menu Pengajuan Issuer;
+  :Isi form pengajuan;
+  :Submit form;
+}
+partition System {
+  :Validasi data;
+  if (Data valid?) then (ya)
+    :Simpan ke database (status pending);
+    :Kirim notifikasi ke admin;
+    :Tampilkan pesan sukses;
+  else (tidak)
+    :Tampilkan error validasi;
+  endif
+}
+partition Admin {
   :Login ke aplikasi;
   :Akses menu Approval Issuer;
   :Review permohonan issuer;
