@@ -12,14 +12,16 @@ partition System {
     :Kirim transaksi ke blockchain;
     if (Transaksi sukses?) then (ya)
       :Tampilkan pesan sukses;
+      end
     else (tidak)
       :Rollback database;
       :Tampilkan error transaksi;
+      end
     endif
   else (tidak)
     :Update status REJECTED di database;
     :Tampilkan pesan rejected;
+    end
   endif
 }
-end
 @enduml 

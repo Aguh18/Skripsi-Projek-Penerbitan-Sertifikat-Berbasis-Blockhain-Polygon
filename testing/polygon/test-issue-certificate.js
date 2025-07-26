@@ -14,19 +14,19 @@ const contract = new ethers.Contract(contractAddress, abi, wallet);
 
 delete process.env.NODE_OPTIONS;
 
-function generateCertificateData() {
-    const randomInput = Date.now().toString() + Math.random().toString();
-    const randomId = ethers.utils.keccak256(ethers.utils.toUtf8Bytes(randomInput));
-
+function generateCertificateData(iteration) {
+    // Generate dummy id dengan panjang 66 karakter (0x + 64 hex)
+    const randomHex = [...Array(64)].map(() => Math.floor(Math.random() * 16).toString(16)).join("");
+    const dummyId = "0x" + randomHex;
     return {
-        id: randomId,
-        certificateTitle: "Sertifikat Uji Coba",
-        expiryDate: "2025-12-31",
-        issueDate: new Date().toISOString().slice(0, 10),
-        cid: "QmDummyCID1234567890",
-        issuerName: "Universitas Dummy",
-        recipientName: "Budi Santoso",
-        targetAddress: "0x1234567890abcdef1234567890abcdef12345678"
+        id: dummyId,
+        certificateTitle: `Sertifikat Uji Coba #${iteration}`,
+        expiryDate: `2025-12-${String(10 + iteration).padStart(2, '0')}`,
+        issueDate: new Date(Date.now() + iteration * 86400000).toISOString().slice(0, 10),
+        cid: `https://gateway.pinata.cloud/ipfs/QmTHe3ihMt1djuwbcRrg7vZUN4c2aysoKzEiFs9sU1iPxj?dummy=${iteration}`,
+        issuerName: `Universitas Dummy ${iteration}`,
+        recipientName: `Budi Santoso ${iteration}`,
+        targetAddress: `0x${[...Array(40)].map(() => Math.floor(Math.random() * 16).toString(16)).join("")}`
     };
 }
 
@@ -37,13 +37,13 @@ async function main() {
         console.log("| No | Tx Hash | Waktu (detik) | Gas Used | Gas Price (gwei) | Total Fee (MATIC) |");
         console.log("=".repeat(100));
 
-        const csvData = ['No,Tx Hash,Waktu (detik),Gas Used,Gas Price (gwei),Total Fee (MATIC)\n'];
+        const csvData = ['No,Tx Hash,Waktu (detik),Gas Used,Gas Price (gwei),Total Fee (MATIC),ID,Title,Expiry,IssueDate,CID,Issuer,Recipient,TargetAddress\n'];
         const results = [];
         let successCount = 0;
         let failCount = 0;
 
-        for (let i = 1; i <= 20; i++) {
-            const certificateData = generateCertificateData();
+        for (let i = 1; i <= 15; i++) {
+            const certificateData = generateCertificateData(i);
 
             console.log(`Penerbitan ke-${i}...`);
 
@@ -97,11 +97,19 @@ async function main() {
 
                 console.log(`| ${i.toString().padStart(3)} | ${tx.hash.substring(0, 10)}... | ${time.toFixed(4).padStart(10)} | ${receipt.gasUsed.toString().padStart(8)} | ${gasPriceGwei.padStart(15)} | ${totalFee.padStart(15)} |`);
 
-                csvData.push(`${i},${tx.hash},${time.toFixed(4)},${receipt.gasUsed.toString()},${gasPriceGwei},${totalFee}\n`);
+                // Format semua data numerik agar mudah dibaca, tanpa pemisah ribuan
+                let timeFormatted = Number(time).toFixed(4);
+                let gasUsedFormatted = receipt.gasUsed.toString();
+                let gasPriceFormatted = gasPriceGwei !== "N/A" ? Number(gasPriceGwei).toFixed(6) : gasPriceGwei;
+                let totalFeeFormatted = totalFee;
+                if (totalFee !== "N/A") {
+                    totalFeeFormatted = Number(totalFee).toFixed(6);
+                }
+                csvData.push(`${i},${tx.hash},${timeFormatted},${gasUsedFormatted},${gasPriceFormatted},${totalFeeFormatted},${certificateData.id},${certificateData.certificateTitle},${certificateData.expiryDate},${certificateData.issueDate},${certificateData.cid},${certificateData.issuerName},${certificateData.recipientName},${certificateData.targetAddress}\n`);
 
             } catch (error) {
                 console.log(`| ${i.toString().padStart(3)} | FAILED | N/A | N/A | N/A | N/A |`);
-                csvData.push(`${i},FAILED,N/A,N/A,N/A,N/A\n`);
+                csvData.push(`${i},FAILED,N/A,N/A,N/A,N/A,${certificateData.id},${certificateData.certificateTitle},${certificateData.expiryDate},${certificateData.issueDate},${certificateData.cid},${certificateData.issuerName},${certificateData.recipientName},${certificateData.targetAddress}\n`);
                 failCount++;
 
                 const result = {

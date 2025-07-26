@@ -1,41 +1,35 @@
 @startuml
-partition User {
-  start
-  :Login ke aplikasi;
-  :Akses menu Pengajuan Issuer;
-  :Isi form pengajuan;
-  :Submit form;
-}
-partition System {
-  :Validasi data;
-  if (Data valid?) then (ya)
-    :Simpan ke database (status pending);
-    :Kirim notifikasi ke admin;
-    :Tampilkan pesan sukses;
-  else (tidak)
-    :Tampilkan error validasi;
-  endif
-}
-partition Admin {
-  :Login ke aplikasi;
+' Activity Diagram Pengajuan dan Approval Issuer
+start
+:Akses menu Pengajuan Issuer;
+:Isi form pengajuan;
+:Submit form;
+:Validasi data;
+if (Data valid?) then (ya)
+  :Simpan ke database (status pending);
+  :Kirim notifikasi ke admin;
+  :Tampilkan pesan sukses;
   :Akses menu Approval Issuer;
   :Review permohonan issuer;
   :Approve/Reject permohonan;
-}
-partition System {
   if (Approve?) then (ya)
     :Update status & role di database;
     :Kirim transaksi ke blockchain;
     if (Transaksi sukses?) then (ya)
       :Tampilkan pesan sukses;
+      end
     else (tidak)
       :Rollback database;
       :Tampilkan error transaksi;
+      end
     endif
   else (tidak)
     :Update status REJECTED di database;
     :Tampilkan pesan rejected;
+    end
   endif
-}
-end
+else (tidak)
+  :Tampilkan error validasi;
+  end
+endif
 @enduml 

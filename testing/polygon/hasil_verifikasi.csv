@@ -1,109 +1,40 @@
-No,Hasil,Waktu (detik)
-1,true,4.0070
-2,true,1.5590
-3,true,0.3050
-4,true,3.8600
-5,true,2.3830
-6,true,3.1720
-7,true,2.5180
-8,true,0.1620
-9,true,1.3140
-10,true,1.2310
-11,true,1.0150
-12,true,0.6190
-13,true,0.7100
-14,true,0.9510
-15,true,1.9200
-16,true,1.6320
-17,true,1.1460
-18,true,2.4460
-19,true,1.5530
-20,true,0.7570
-21,true,0.7080
-22,true,3.2950
-23,true,0.6910
-24,true,0.3840
-25,true,1.3370
-26,true,1.3270
-27,true,0.8930
-28,true,2.1480
-29,true,1.5400
-30,true,1.2350
-31,true,0.5140
-32,true,0.5010
-33,true,0.8220
-34,true,0.3860
-35,true,1.2500
-36,true,0.5490
-37,true,0.3890
-38,true,0.4020
-39,true,0.6260
-40,true,1.0090
-41,true,0.9230
-42,true,0.6320
-43,true,0.7590
-44,true,1.0700
-45,true,0.3240
-46,true,0.6200
-47,true,0.5080
-48,true,0.3610
-49,true,0.3760
-50,true,0.7210
-51,true,0.2550
-52,true,0.5920
-53,true,0.3300
-54,true,0.1450
-55,true,0.5970
-56,true,0.4190
-57,true,0.4710
-58,true,1.4310
-59,true,1.9800
-60,true,1.4020
-61,true,2.0770
-62,true,1.6410
-63,true,2.9400
-64,true,6.6600
-65,true,4.3950
-66,true,8.0880
-67,true,2.1650
-68,true,0.9070
-69,true,0.4440
-70,true,0.4790
-71,true,0.9720
-72,true,0.8430
-73,true,0.5590
-74,true,0.6020
-75,true,0.4010
-76,true,0.3100
-77,true,0.9200
-78,true,1.1230
-79,true,0.7230
-80,true,1.0730
-81,true,1.6880
-82,true,1.5870
-83,true,1.3330
-84,true,0.6630
-85,true,0.3690
-86,true,0.6120
-87,true,0.0990
-88,true,0.7510
-89,true,0.5260
-90,true,0.6790
-91,true,0.4550
-92,true,0.2470
-93,true,0.1170
-94,true,0.1100
-95,true,0.2690
-96,true,0.3000
-97,true,0.2780
-98,true,0.6110
-99,true,0.4980
-100,true,2.1640
+No,Hasil,Waktu (detik),id,certificateTitle,cid,expiryDate,issueDate,issuerAddress,issuerName,recipientName,targetAddress,isValid
+1,true,22.1300,0x5c960ce4a6442d3e9ebd63fc8d41aa5b39816e9a3648be4672b6cc5b7a843dfc,Sertifikat Uji Coba #1,https://gateway.pinata.cloud/ipfs/QmTHe3ihMt1djuwbcRrg7vZUN4c2aysoKzEiFs9sU1iPxj?dummy=1,2025-12-11,2025-07-26,0xD78a1e290daff294999d9ac6BbFFd2e41fAd7490,Universitas Dummy 1,Budi Santoso 1,0xB080A00A9D45C0BC810fB907Ca1641414aEA2002,true
+2,true,13.9700,0x10a645e869ddcfa38bb210a2d3eb588c7edd07a9e7e73098e20fa87e18fe34f2,Sertifikat Uji Coba #2,https://gateway.pinata.cloud/ipfs/QmTHe3ihMt1djuwbcRrg7vZUN4c2aysoKzEiFs9sU1iPxj?dummy=2,2025-12-12,2025-07-27,0xD78a1e290daff294999d9ac6BbFFd2e41fAd7490,Universitas Dummy 2,Budi Santoso 2,0x81885DBfe8dA30ed5d8e5C6Daa422F6ee7BF9bD3,true
+3,true,6.0680,0xc549cdecf2b6da27fd7ad460f99a6d1be9ac12288537c2d663e19570c3e69654,Sertifikat Uji Coba #3,https://gateway.pinata.cloud/ipfs/QmTHe3ihMt1djuwbcRrg7vZUN4c2aysoKzEiFs9sU1iPxj?dummy=3,2025-12-13,2025-07-28,0xD78a1e290daff294999d9ac6BbFFd2e41fAd7490,Universitas Dummy 3,Budi Santoso 3,0x1030D203B595bB1EE480097Aca19d6Ff9Dc1d7AC,true
+4,true,10.2690,0x971330f6a575f0d54dd54d635737e33748954ac580c7cea9e1cb4b2407ccbc82,Sertifikat Uji Coba #4,https://gateway.pinata.cloud/ipfs/QmTHe3ihMt1djuwbcRrg7vZUN4c2aysoKzEiFs9sU1iPxj?dummy=4,2025-12-14,2025-07-29,0xD78a1e290daff294999d9ac6BbFFd2e41fAd7490,Universitas Dummy 4,Budi Santoso 4,0x0Cf9607E8F94819614E0ECC87C5EAAf9E870980B,true
+5,true,6.7170,0xe1d2bdb5e8d1001928ce47377f86ee3b8c28599f58d1a14008a1ae68f2f48501,Sertifikat Uji Coba #5,https://gateway.pinata.cloud/ipfs/QmTHe3ihMt1djuwbcRrg7vZUN4c2aysoKzEiFs9sU1iPxj?dummy=5,2025-12-15,2025-07-30,0xD78a1e290daff294999d9ac6BbFFd2e41fAd7490,Universitas Dummy 5,Budi Santoso 5,0x4CA593176F7e73260266B2C194847cA48c59B551,true
+6,true,12.1870,0x9a5104c89d73fcd83ea7a9a02684028c4c3e48065a9fa1aff064706db8d95825,Sertifikat Uji Coba #6,https://gateway.pinata.cloud/ipfs/QmTHe3ihMt1djuwbcRrg7vZUN4c2aysoKzEiFs9sU1iPxj?dummy=6,2025-12-16,2025-07-31,0xD78a1e290daff294999d9ac6BbFFd2e41fAd7490,Universitas Dummy 6,Budi Santoso 6,0x3a497DFaC649d53880D3066Fe3aFEf18Ed90de3D,true
+7,true,7.7490,0xc48298eb4bb9f7c473e449d1fc6dfcaabf9c7af085357ee66cfcc297b7bf59e3,Sertifikat Uji Coba #7,https://gateway.pinata.cloud/ipfs/QmTHe3ihMt1djuwbcRrg7vZUN4c2aysoKzEiFs9sU1iPxj?dummy=7,2025-12-17,2025-08-01,0xD78a1e290daff294999d9ac6BbFFd2e41fAd7490,Universitas Dummy 7,Budi Santoso 7,0x82d9e036cD8a951F7dC13872650e1B6CDe23Ed3a,true
+8,true,14.2240,0xaaa94fc0bb92c6857b9aa8114993f6ea4111f7c111966a475845332da269b732,Sertifikat Uji Coba #8,https://gateway.pinata.cloud/ipfs/QmTHe3ihMt1djuwbcRrg7vZUN4c2aysoKzEiFs9sU1iPxj?dummy=8,2025-12-18,2025-08-02,0xD78a1e290daff294999d9ac6BbFFd2e41fAd7490,Universitas Dummy 8,Budi Santoso 8,0x90C1062e3303d6Bb4DE98581fA3e9616C9B41cdF,true
+9,true,6.2480,0x8a76b80d53be695401896990d2d92146daad2ce3d4bf0cac08270844acf88bea,Sertifikat Uji Coba #9,https://gateway.pinata.cloud/ipfs/QmTHe3ihMt1djuwbcRrg7vZUN4c2aysoKzEiFs9sU1iPxj?dummy=9,2025-12-19,2025-08-03,0xD78a1e290daff294999d9ac6BbFFd2e41fAd7490,Universitas Dummy 9,Budi Santoso 9,0x3eb6DE5Ec7F450bc44E7af3BAf87710cA19d1121,true
+10,true,5.0170,0x4dca3ec870b35ec8fa830ede917d54758309cb7bc241f3482ea13739b1a3d0dd,Sertifikat Uji Coba #10,https://gateway.pinata.cloud/ipfs/QmTHe3ihMt1djuwbcRrg7vZUN4c2aysoKzEiFs9sU1iPxj?dummy=10,2025-12-20,2025-08-04,0xD78a1e290daff294999d9ac6BbFFd2e41fAd7490,Universitas Dummy 10,Budi Santoso 10,0xD0c7eF04086Fb369a357c4864c2b102E2321659e,true
+11,true,0.5840,0x6751130f0dee2d66e2fd9f21eaf39648b278182c1a09b017ffa795ec4b6c4fe3,Sertifikat Uji Coba #11,https://gateway.pinata.cloud/ipfs/QmTHe3ihMt1djuwbcRrg7vZUN4c2aysoKzEiFs9sU1iPxj?dummy=11,2025-12-21,2025-08-05,0xD78a1e290daff294999d9ac6BbFFd2e41fAd7490,Universitas Dummy 11,Budi Santoso 11,0x67E6Ea38DD789b43d374407e6C9661922b541707,true
+12,true,8.8380,0x698091b4ed892f1fcb339e69199f679cffde778bb953168f4cc75d2575063c20,Sertifikat Uji Coba #12,https://gateway.pinata.cloud/ipfs/QmTHe3ihMt1djuwbcRrg7vZUN4c2aysoKzEiFs9sU1iPxj?dummy=12,2025-12-22,2025-08-06,0xD78a1e290daff294999d9ac6BbFFd2e41fAd7490,Universitas Dummy 12,Budi Santoso 12,0x51f5295844A4fc79476F5FfA85590de1BdDF3160,true
+13,true,7.2880,0x60379e8d0ea5b5a6a6728630fc3fca138b5f404b89eefe5ec52484c3a05c03f2,Sertifikat Uji Coba #13,https://gateway.pinata.cloud/ipfs/QmTHe3ihMt1djuwbcRrg7vZUN4c2aysoKzEiFs9sU1iPxj?dummy=13,2025-12-23,2025-08-07,0xD78a1e290daff294999d9ac6BbFFd2e41fAd7490,Universitas Dummy 13,Budi Santoso 13,0xa433668bB6Fe8253DE2678F80344C0ef4B27f3b2,true
+14,true,8.7100,0x33128e6f9ea769d7e4ff3b3fccbe8b6c2c4c5fb0c60a967f012198a4fd5f7d73,Sertifikat Uji Coba #14,https://gateway.pinata.cloud/ipfs/QmTHe3ihMt1djuwbcRrg7vZUN4c2aysoKzEiFs9sU1iPxj?dummy=14,2025-12-24,2025-08-08,0xD78a1e290daff294999d9ac6BbFFd2e41fAd7490,Universitas Dummy 14,Budi Santoso 14,0xd59319aA3B9159615de9b7c125f58BcaB133dB3b,true
+15,true,7.2550,0x16b87ea7532c1afa846db5cf5fb9f7cd773a058ade0cc89056231cfbd96e0cfe,Sertifikat Uji Coba #15,https://gateway.pinata.cloud/ipfs/QmTHe3ihMt1djuwbcRrg7vZUN4c2aysoKzEiFs9sU1iPxj?dummy=15,2025-12-25,2025-08-09,0xD78a1e290daff294999d9ac6BbFFd2e41fAd7490,Universitas Dummy 15,Budi Santoso 15,0x2cc0C754e325e701343B9bb9F74e1975458EcDF2,true
+16,true,3.6610,0x5c960ce4a6442d3e9ebd63fc8d41aa5b39816e9a3648be4672b6cc5b7a843dfc,Sertifikat Uji Coba #1,https://gateway.pinata.cloud/ipfs/QmTHe3ihMt1djuwbcRrg7vZUN4c2aysoKzEiFs9sU1iPxj?dummy=1,2025-12-11,2025-07-26,0xD78a1e290daff294999d9ac6BbFFd2e41fAd7490,Universitas Dummy 1,Budi Santoso 1,0xB080A00A9D45C0BC810fB907Ca1641414aEA2002,true
+17,true,0.3380,0x10a645e869ddcfa38bb210a2d3eb588c7edd07a9e7e73098e20fa87e18fe34f2,Sertifikat Uji Coba #2,https://gateway.pinata.cloud/ipfs/QmTHe3ihMt1djuwbcRrg7vZUN4c2aysoKzEiFs9sU1iPxj?dummy=2,2025-12-12,2025-07-27,0xD78a1e290daff294999d9ac6BbFFd2e41fAd7490,Universitas Dummy 2,Budi Santoso 2,0x81885DBfe8dA30ed5d8e5C6Daa422F6ee7BF9bD3,true
+18,true,0.3780,0xc549cdecf2b6da27fd7ad460f99a6d1be9ac12288537c2d663e19570c3e69654,Sertifikat Uji Coba #3,https://gateway.pinata.cloud/ipfs/QmTHe3ihMt1djuwbcRrg7vZUN4c2aysoKzEiFs9sU1iPxj?dummy=3,2025-12-13,2025-07-28,0xD78a1e290daff294999d9ac6BbFFd2e41fAd7490,Universitas Dummy 3,Budi Santoso 3,0x1030D203B595bB1EE480097Aca19d6Ff9Dc1d7AC,true
+19,true,0.3000,0x971330f6a575f0d54dd54d635737e33748954ac580c7cea9e1cb4b2407ccbc82,Sertifikat Uji Coba #4,https://gateway.pinata.cloud/ipfs/QmTHe3ihMt1djuwbcRrg7vZUN4c2aysoKzEiFs9sU1iPxj?dummy=4,2025-12-14,2025-07-29,0xD78a1e290daff294999d9ac6BbFFd2e41fAd7490,Universitas Dummy 4,Budi Santoso 4,0x0Cf9607E8F94819614E0ECC87C5EAAf9E870980B,true
+20,true,0.6540,0xe1d2bdb5e8d1001928ce47377f86ee3b8c28599f58d1a14008a1ae68f2f48501,Sertifikat Uji Coba #5,https://gateway.pinata.cloud/ipfs/QmTHe3ihMt1djuwbcRrg7vZUN4c2aysoKzEiFs9sU1iPxj?dummy=5,2025-12-15,2025-07-30,0xD78a1e290daff294999d9ac6BbFFd2e41fAd7490,Universitas Dummy 5,Budi Santoso 5,0x4CA593176F7e73260266B2C194847cA48c59B551,true
+21,true,0.8430,0x9a5104c89d73fcd83ea7a9a02684028c4c3e48065a9fa1aff064706db8d95825,Sertifikat Uji Coba #6,https://gateway.pinata.cloud/ipfs/QmTHe3ihMt1djuwbcRrg7vZUN4c2aysoKzEiFs9sU1iPxj?dummy=6,2025-12-16,2025-07-31,0xD78a1e290daff294999d9ac6BbFFd2e41fAd7490,Universitas Dummy 6,Budi Santoso 6,0x3a497DFaC649d53880D3066Fe3aFEf18Ed90de3D,true
+22,true,6.4220,0xc48298eb4bb9f7c473e449d1fc6dfcaabf9c7af085357ee66cfcc297b7bf59e3,Sertifikat Uji Coba #7,https://gateway.pinata.cloud/ipfs/QmTHe3ihMt1djuwbcRrg7vZUN4c2aysoKzEiFs9sU1iPxj?dummy=7,2025-12-17,2025-08-01,0xD78a1e290daff294999d9ac6BbFFd2e41fAd7490,Universitas Dummy 7,Budi Santoso 7,0x82d9e036cD8a951F7dC13872650e1B6CDe23Ed3a,true
+23,true,3.6860,0xaaa94fc0bb92c6857b9aa8114993f6ea4111f7c111966a475845332da269b732,Sertifikat Uji Coba #8,https://gateway.pinata.cloud/ipfs/QmTHe3ihMt1djuwbcRrg7vZUN4c2aysoKzEiFs9sU1iPxj?dummy=8,2025-12-18,2025-08-02,0xD78a1e290daff294999d9ac6BbFFd2e41fAd7490,Universitas Dummy 8,Budi Santoso 8,0x90C1062e3303d6Bb4DE98581fA3e9616C9B41cdF,true
+24,true,13.9180,0x8a76b80d53be695401896990d2d92146daad2ce3d4bf0cac08270844acf88bea,Sertifikat Uji Coba #9,https://gateway.pinata.cloud/ipfs/QmTHe3ihMt1djuwbcRrg7vZUN4c2aysoKzEiFs9sU1iPxj?dummy=9,2025-12-19,2025-08-03,0xD78a1e290daff294999d9ac6BbFFd2e41fAd7490,Universitas Dummy 9,Budi Santoso 9,0x3eb6DE5Ec7F450bc44E7af3BAf87710cA19d1121,true
+25,true,7.1430,0x4dca3ec870b35ec8fa830ede917d54758309cb7bc241f3482ea13739b1a3d0dd,Sertifikat Uji Coba #10,https://gateway.pinata.cloud/ipfs/QmTHe3ihMt1djuwbcRrg7vZUN4c2aysoKzEiFs9sU1iPxj?dummy=10,2025-12-20,2025-08-04,0xD78a1e290daff294999d9ac6BbFFd2e41fAd7490,Universitas Dummy 10,Budi Santoso 10,0xD0c7eF04086Fb369a357c4864c2b102E2321659e,true
+26,true,6.1590,0x6751130f0dee2d66e2fd9f21eaf39648b278182c1a09b017ffa795ec4b6c4fe3,Sertifikat Uji Coba #11,https://gateway.pinata.cloud/ipfs/QmTHe3ihMt1djuwbcRrg7vZUN4c2aysoKzEiFs9sU1iPxj?dummy=11,2025-12-21,2025-08-05,0xD78a1e290daff294999d9ac6BbFFd2e41fAd7490,Universitas Dummy 11,Budi Santoso 11,0x67E6Ea38DD789b43d374407e6C9661922b541707,true
+27,true,9.4080,0x698091b4ed892f1fcb339e69199f679cffde778bb953168f4cc75d2575063c20,Sertifikat Uji Coba #12,https://gateway.pinata.cloud/ipfs/QmTHe3ihMt1djuwbcRrg7vZUN4c2aysoKzEiFs9sU1iPxj?dummy=12,2025-12-22,2025-08-06,0xD78a1e290daff294999d9ac6BbFFd2e41fAd7490,Universitas Dummy 12,Budi Santoso 12,0x51f5295844A4fc79476F5FfA85590de1BdDF3160,true
+28,true,8.8160,0x60379e8d0ea5b5a6a6728630fc3fca138b5f404b89eefe5ec52484c3a05c03f2,Sertifikat Uji Coba #13,https://gateway.pinata.cloud/ipfs/QmTHe3ihMt1djuwbcRrg7vZUN4c2aysoKzEiFs9sU1iPxj?dummy=13,2025-12-23,2025-08-07,0xD78a1e290daff294999d9ac6BbFFd2e41fAd7490,Universitas Dummy 13,Budi Santoso 13,0xa433668bB6Fe8253DE2678F80344C0ef4B27f3b2,true
+29,true,0.4300,0x33128e6f9ea769d7e4ff3b3fccbe8b6c2c4c5fb0c60a967f012198a4fd5f7d73,Sertifikat Uji Coba #14,https://gateway.pinata.cloud/ipfs/QmTHe3ihMt1djuwbcRrg7vZUN4c2aysoKzEiFs9sU1iPxj?dummy=14,2025-12-24,2025-08-08,0xD78a1e290daff294999d9ac6BbFFd2e41fAd7490,Universitas Dummy 14,Budi Santoso 14,0xd59319aA3B9159615de9b7c125f58BcaB133dB3b,true
+30,true,0.2990,0x16b87ea7532c1afa846db5cf5fb9f7cd773a058ade0cc89056231cfbd96e0cfe,Sertifikat Uji Coba #15,https://gateway.pinata.cloud/ipfs/QmTHe3ihMt1djuwbcRrg7vZUN4c2aysoKzEiFs9sU1iPxj?dummy=15,2025-12-25,2025-08-09,0xD78a1e290daff294999d9ac6BbFFd2e41fAd7490,Universitas Dummy 15,Budi Santoso 15,0x2cc0C754e325e701343B9bb9F74e1975458EcDF2,true
 
 STATISTIK
-Total percobaan,100
-Berhasil,100
+Total percobaan,0
+Berhasil,0
 Gagal,0
-Rata-rata waktu (detik),1.1786
-Waktu tercepat (detik),0.0990
-Waktu terlama (detik),8.0880
+Success Rate (%),NaN
+Rata-rata waktu (detik),NaN
+Waktu tercepat (detik),Infinity
+Waktu terlama (detik),-Infinity

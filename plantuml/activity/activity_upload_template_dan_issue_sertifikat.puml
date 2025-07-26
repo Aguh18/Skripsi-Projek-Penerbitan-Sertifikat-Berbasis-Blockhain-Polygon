@@ -1,0 +1,34 @@
+@startuml
+' Activity Diagram Upload Template dan Issue Sertifikat
+start
+:Akses menu Upload Template;
+:Pilih file template;
+:Isi nama template;
+:Set posisi nama (X,Y);
+:Submit form upload;
+:Validasi file template;
+if (File valid?) then (ya)
+  :Upload file ke IPFS;
+  :Simpan data template ke database;
+  :Tampilkan pesan sukses;
+  :Akses menu Issue Certificate;
+  :Pilih template;
+  :Isi data penerima (single/bulk);
+  :Submit form issue;
+  :Validasi data penerima;
+  if (Data valid?) then (ya)
+    :Generate PDF sertifikat;
+    :Upload PDF ke IPFS;
+    :Generate hash;
+    :Simpan data ke database (status draft);
+    :Tampilkan pesan sukses;
+    end
+  else (tidak)
+    :Tampilkan error validasi;
+    end
+  endif
+else (tidak)
+  :Tampilkan error validasi;
+  end
+endif
+@enduml 

@@ -1,0 +1,28 @@
+@startuml
+' Activity Diagram Login dan Akses Fitur
+start
+:Buka aplikasi;
+:Klik tombol Login;
+:Connect MetaMask wallet;
+:Sign message;
+:Verifikasi signature;
+if (Signature valid?) then (ya)
+  :Cek role user;
+  if (Admin) then (ya)
+    :Redirect ke dashboard admin;
+    end
+  elseif (Issuer) then (ya)
+    :Redirect ke dashboard issuer;
+    end
+  elseif (Verifier) then (ya)
+    :Redirect ke dashboard verifier;
+    end
+  else (Guest)
+    :Redirect ke halaman utama;
+    end
+  endif
+else (tidak)
+  :Tampilkan error signature;
+  end
+endif
+@enduml 

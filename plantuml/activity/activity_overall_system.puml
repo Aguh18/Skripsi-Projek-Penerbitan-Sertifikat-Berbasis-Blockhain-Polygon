@@ -1,1 +1,33 @@
- 
+@startuml
+' Activity Diagram Utama Sistem Sertifikat
+start
+:User/Guest mengakses aplikasi;
+:Login via MetaMask;
+if (Login sukses?) then (ya)
+  :Cek role user;
+  if (Admin?) then (ya)
+    :Menuju dashboard admin;
+    :Review & approve issuer;
+    :Kelola sertifikat;
+    stop
+  elseif (Issuer?) then (ya)
+    :Menuju dashboard issuer;
+    :Upload template;
+    :Issue sertifikat;
+    :Publish sertifikat;
+    stop
+  elseif (Verifier?) then (ya)
+    :Menuju dashboard verifier;
+    :Lihat riwayat verifikasi;
+    stop
+  else (Guest)
+    :Menuju halaman utama;
+    :Verifikasi sertifikat;
+    :Ajukan permohonan issuer;
+    stop
+  endif
+else (tidak)
+  :Tampilkan error login;
+  stop
+endif
+@enduml 
